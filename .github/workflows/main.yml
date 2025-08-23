@@ -26,11 +26,19 @@ jobs:
           api-level: 34
           build-tools: "34.0.0"
 
-      # ⬇️ Gradle 8.7 (existe et satisfait l’AGP)
       - name: Set up Gradle 8.7
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 8.7
+
+      # >>> DEBUG: on imprime l’arborescence et on vérifie le manifest
+      - name: Debug project tree
+        run: |
+          pwd
+          echo "== ROOT ==" && ls -la
+          echo "== app ==" && ls -la app || true
+          echo "== app/src/main ==" && ls -la app/src/main || true
+          echo "Manifest present?" && [ -f app/src/main/AndroidManifest.xml ] && echo "YES" || echo "NO"
 
       - name: Build Debug APK
         run: gradle --no-daemon clean :app:assembleDebug
