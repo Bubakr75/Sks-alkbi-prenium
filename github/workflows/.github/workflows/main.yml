@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -19,18 +19,18 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle 8.3
-        uses: gradle/gradle-build-action@v2
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle build (no wrapper)
+        uses: gradle/gradle-build-action@v3
         with:
           gradle-version: 8.3
-
-      - name: Build Debug APK
-        run: |
-          gradle --version
-          gradle clean :app:assembleDebug
+          build-root-directory: .
+          arguments: :app:assembleDebug
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sks-alibi-debug-apk
+          name: app-debug
           path: app/build/outputs/apk/debug/*.apk
