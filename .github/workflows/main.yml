@@ -31,7 +31,7 @@ jobs:
         with:
           gradle-version: 8.7
 
-      # >>> DEBUG: on imprime l’arborescence et on vérifie le manifest
+      # <<< ICI on vérifie l'arborescence et la présence du Manifest
       - name: Debug project tree
         run: |
           pwd
@@ -39,6 +39,7 @@ jobs:
           echo "== app ==" && ls -la app || true
           echo "== app/src/main ==" && ls -la app/src/main || true
           echo "Manifest present?" && [ -f app/src/main/AndroidManifest.xml ] && echo "YES" || echo "NO"
+          sed -n '1,40p' app/src/main/AndroidManifest.xml || true
 
       - name: Build Debug APK
         run: gradle --no-daemon clean :app:assembleDebug
