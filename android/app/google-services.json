@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "532373173517",
+    "project_id": "sks-alibi",
+    "storage_bucket": "sks-alibi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:532373173517:android:aadc79a59098bd0b57ac44",
+        "android_client_info": {
+          "package_name": "com.sks.sks_alibi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT1bqUSEuQpa_lauBaaJcTpm7CLFo9vE0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
