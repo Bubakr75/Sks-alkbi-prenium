@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'game_screen.dart';
+import 'services/scenario_service.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   const CreateRoomScreen({super.key});
@@ -41,6 +42,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         'code': code,
         'hostUid': uid,
         'status': 'waiting',
+        'scenarioId': 'penalty_manque',
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -53,7 +55,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         'uid': uid,
         'name': _nameController.text.trim(),
         'isHost': true,
-        'roleKey': '',
       });
 
       if (mounted) {
@@ -156,21 +157,13 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
-  final List<String> _roleKeys = [
-    'Le Coupable',
-    'Le Temoin',
-    'Le Complice',
-    'L Innocent',
-    'Le Provocateur',
-    'Le Detektiv',
-  ];
-
   bool _isStarting = false;
 
   Future<void> _startGame() async {
     setState(() => _isStarting = true);
 
     try {
+      // 1. Recuperer la liste des joueurs du salon
       final playersSnap = await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
@@ -178,13 +171,61 @@ class _LobbyScreenState extends State<LobbyScreen> {
           .get();
 
       final players = playersSnap.docs;
-      final roles = List<String>.from(_roleKeys)..shuffle();
 
-      for (int i = 0; i < players.length; i++) {
-        final role = roles[i % roles.length];
-        await players[i].reference.update({'roleKey': role});
+      // 2. Charger le scenario
+      final service = ScenarioService();
+      final scenario = await service.chargerScenario('penalty_manque');
+
+      if (scenario == null) {
+        throw Exception('Scenario introuvable');
       }
 
+      // 3. Verifier le nombre de joueurs
+      if (players.length < scenario.minJoueurs ||
+          players.length > scenario.maxJoueurs) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Il faut entre ${scenario.minJoueurs} et ${scenario.maxJoueurs} joueurs (actuel : ${players.length})',
+              ),
+            ),
+          );
+        }
+        setState(() => _isStarting = false);
+        return;
+      }
+
+      // 4. Construire la liste des JoueurInfo
+      final joueurs = players.map((doc) {
+        final data = doc.data();
+        return JoueurInfo(
+          id: data['uid'] as String,
+          prenom: data['name'] as String,
+        );
+      }).toList();
+
+      // 5. Distribuer les cartes (melange aleatoire + personnalisation)
+      final cartesParJoueur = service.distribuerCartes(
+        scenario: scenario,
+        joueurs: joueurs,
+      );
+
+      // 6. Sauvegarder chaque carte sous le joueur correspondant
+      for (final joueur in joueurs) {
+        final carte = cartesParJoueur[joueur.id]!;
+        await FirebaseFirestore.instance
+            .collection('rooms')
+            .doc(widget.code)
+            .collection('players')
+            .doc(joueur.id)
+            .update({
+          'carte': carte.toMap(),
+          'roleKey': carte.role,
+        });
+      }
+
+      // 7. Passer le statut a "playing"
       await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
@@ -198,7 +239,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
       }
     }
 
-    setState(() => _isStarting = false);
+    if (mounted) {
+      setState(() => _isStarting = false);
+    }
   }
 
   @override
