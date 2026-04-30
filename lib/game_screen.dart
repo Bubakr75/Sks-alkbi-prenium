@@ -19,6 +19,8 @@ class _GameScreenState extends State<GameScreen> {
   String _titreScenario = '';
   String _introScenario = '';
   Map<int, String> _slotToName = {};
+  List<EvenementDebat> _evenements = [];
+  DateTime? _gameStartedAt;
   bool _isLoading = true;
   String? _erreur;
 
@@ -61,6 +63,12 @@ class _GameScreenState extends State<GameScreen> {
         return;
       }
 
+      final gameStartTs = roomDoc.data()?['gameStartedAt'];
+      DateTime? gameStartedAt;
+      if (gameStartTs is Timestamp) {
+        gameStartedAt = gameStartTs.toDate();
+      }
+
       final scenarioDoc = await FirebaseFirestore.instance
           .collection('scenarios')
           .doc(scenarioId)
@@ -68,7 +76,11 @@ class _GameScreenState extends State<GameScreen> {
       final titre = scenarioDoc.data()?['titre'] as String? ?? 'Scenario';
       final intro = scenarioDoc.data()?['intro'] as String? ?? '';
 
-      // Charge la liste de tous les joueurs pour construire le mapping slot -> prenom
+      final evenementsRaw = scenarioDoc.data()?['evenements'] as List<dynamic>? ?? [];
+      final evenements = evenementsRaw
+          .map((e) => EvenementDebat.fromMap(e as Map<String, dynamic>))
+          .toList();
+
       final playersSnap = await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
@@ -109,6 +121,8 @@ class _GameScreenState extends State<GameScreen> {
         _titreScenario = titre;
         _introScenario = intro;
         _slotToName = slotToName;
+        _evenements = evenements;
+        _gameStartedAt = gameStartedAt;
         _isLoading = false;
       });
     } catch (e) {
@@ -180,6 +194,8 @@ class _GameScreenState extends State<GameScreen> {
       code: widget.code,
       introScenario: _introScenario,
       slotToName: _slotToName,
+      evenements: _evenements,
+      gameStartedAt: _gameStartedAt,
     );
   }
 }

@@ -229,7 +229,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
-          .update({'status': 'playing'});
+          .update({'status': 'playing', 'gameStartedAt': FieldValue.serverTimestamp()});
 
     } catch (e) {
       if (mounted) {
@@ -390,3 +390,4 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 }
+

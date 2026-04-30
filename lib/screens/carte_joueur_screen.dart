@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sks_alibi/models/scenario_model.dart';
@@ -11,6 +12,8 @@ class CarteJoueurScreen extends StatefulWidget {
   final String? code;
   final String introScenario;
   final Map<int, String> slotToName;
+  final List<EvenementDebat> evenements;
+  final DateTime? gameStartedAt;
 
   const CarteJoueurScreen({
     super.key,
@@ -20,6 +23,8 @@ class CarteJoueurScreen extends StatefulWidget {
     this.code,
     this.introScenario = '',
     this.slotToName = const {},
+    this.evenements = const [],
+    this.gameStartedAt,
   });
 
   @override
@@ -30,6 +35,51 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
   bool _secretRevealed = false;
   bool _voteRequested = false;
   bool _introExpanded = true;
+
+  Timer? _ticker;
+  int _evenementsDeclenches = 0;
+  bool _showFlashBanner = false;
+  static const int _delaiPremierEvtSecondes = 90;
+  static const int _delaiEntreEvtSecondes = 90;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.gameStartedAt != null && widget.evenements.isNotEmpty) {
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        _verifierEvenements();
+      });
+      _verifierEvenements();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _verifierEvenements() {
+    if (widget.gameStartedAt == null) return;
+    final now = DateTime.now();
+    final secondesEcoulees = now.difference(widget.gameStartedAt!).inSeconds;
+    final dejaDeclenchesAttendus = _evtsCensesEtreDeclenches(secondesEcoulees);
+    if (dejaDeclenchesAttendus > _evenementsDeclenches &&
+        dejaDeclenchesAttendus <= widget.evenements.length) {
+      setState(() {
+        _evenementsDeclenches = dejaDeclenchesAttendus;
+        _showFlashBanner = true;
+      });
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted) setState(() => _showFlashBanner = false);
+      });
+    }
+  }
+
+  int _evtsCensesEtreDeclenches(int secondes) {
+    if (secondes < _delaiPremierEvtSecondes) return 0;
+    return 1 + ((secondes - _delaiPremierEvtSecondes) ~/ _delaiEntreEvtSecondes);
+  }
 
   String _nameForSlot(int slot) {
     return widget.slotToName[slot] ?? 'Joueur $slot';
@@ -115,6 +165,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
                 ),
               ),
             ),
+          ..._buildEvenementsDeclenches(),
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -260,79 +311,258 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
       ),
     );
 
-    if (widget.code == null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF1A1A2E),
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          title: Text(widget.titreScenario),
-        ),
-        body: bodyContent,
-      );
-    }
-
-    return Scaffold(
+    Widget mainScaffold = Scaffold(
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: Text(widget.titreScenario),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('rooms')
-            .doc(widget.code)
-            .collection('players')
-            .snapshots(),
-        builder: (context, playersSnap) {
-          final totalPlayers = playersSnap.data?.docs.length ?? 0;
-
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('rooms')
-                .doc(widget.code)
-                .collection('voteRequests')
-                .snapshots(),
-            builder: (context, reqSnap) {
-              final reqCount = reqSnap.data?.docs.length ?? 0;
-
-              if (reqCount >= totalPlayers && totalPlayers > 0 && reqCount > 0) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (_) => VoteScreen(
-                          code: widget.code!,
-                          playerName: widget.prenomJoueur,
-                        ),
-                      ),
+      body: Stack(
+        children: [
+          if (widget.code == null)
+            bodyContent
+          else
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('rooms')
+                  .doc(widget.code)
+                  .collection('players')
+                  .snapshots(),
+              builder: (context, playersSnap) {
+                final totalPlayers = playersSnap.data?.docs.length ?? 0;
+                return StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('rooms')
+                      .doc(widget.code)
+                      .collection('voteRequests')
+                      .snapshots(),
+                  builder: (context, reqSnap) {
+                    final reqCount = reqSnap.data?.docs.length ?? 0;
+                    if (reqCount >= totalPlayers && totalPlayers > 0 && reqCount > 0) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (_) => VoteScreen(
+                                code: widget.code!,
+                                playerName: widget.prenomJoueur,
+                              ),
+                            ),
+                          );
+                        }
+                      });
+                    }
+                    return Column(
+                      children: [
+                        if (reqCount > 0 && reqCount < totalPlayers)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(8),
+                            color: Colors.purple.withValues(alpha: 0.3),
+                            child: Text(
+                              'Joueurs prets a voter : $reqCount / $totalPlayers',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        Expanded(child: bodyContent),
+                      ],
                     );
-                  }
-                });
-              }
-
-              return Column(
-                children: [
-                  if (reqCount > 0 && reqCount < totalPlayers)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(8),
-                      color: Colors.purple.withValues(alpha: 0.3),
-                      child: Text(
-                        'Joueurs prets a voter : $reqCount / $totalPlayers',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white),
-                      ),
+                  },
+                );
+              },
+            ),
+          if (_showFlashBanner)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.4, end: 1.0),
+                duration: const Duration(milliseconds: 500),
+                builder: (context, value, child) {
+                  return Container(
+                    color: Colors.red.withValues(alpha: value),
+                    padding: const EdgeInsets.all(16),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.warning, color: Colors.white, size: 28),
+                        SizedBox(width: 12),
+                        Text(
+                          '🚨 NOUVEL EVENEMENT !',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ],
                     ),
-                  Expanded(child: bodyContent),
-                ],
-              );
-            },
-          );
-        },
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
+
+    return mainScaffold;
+  }
+
+  List<Widget> _buildEvenementsDeclenches() {
+    final widgets = <Widget>[];
+    for (var i = 0; i < _evenementsDeclenches && i < widget.evenements.length; i++) {
+      final evt = widget.evenements[i];
+      final reaction = _findReactionForEvent(evt.id);
+      widgets.add(
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.red.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.redAccent, width: 2),
+          ),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              initiallyExpanded: true,
+              iconColor: Colors.redAccent,
+              collapsedIconColor: Colors.redAccent,
+              title: Row(
+                children: [
+                  const Icon(Icons.flash_on, color: Colors.redAccent),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'EVENEMENT ${i + 1} : ${evt.titre}',
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        evt.texte,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (reaction != null) ...[
+                        const Divider(color: Colors.white24, height: 24),
+                        const Text(
+                          '👤 TA POSITION OFFICIELLE',
+                          style: TextStyle(
+                            color: Colors.amber,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          reaction.positionOfficielle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                        if (reaction.explications.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          const Text(
+                            '💡 EXPLICATIONS POSSIBLES',
+                            style: TextStyle(
+                              color: Colors.lightBlue,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          ...reaction.explications.map((e) => Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('• ',
+                                        style: TextStyle(color: Colors.lightBlue)),
+                                    Expanded(
+                                      child: Text(e,
+                                          style: const TextStyle(
+                                              color: Colors.white, fontSize: 13)),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ],
+                        if (reaction.opportuniteStrategique != null &&
+                            reaction.opportuniteStrategique!.isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.purple),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '🎯 OPPORTUNITE STRATEGIQUE',
+                                  style: TextStyle(
+                                    color: Colors.purple,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  reaction.opportuniteStrategique!,
+                                  style: const TextStyle(
+                                      color: Colors.white, fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return widgets;
+  }
+
+  ReactionEvenement? _findReactionForEvent(String eventId) {
+    try {
+      final reactions = (widget.carte as dynamic).reactionsEvenements as List<ReactionEvenement>;
+      for (final r in reactions) {
+        if (r.evenementId == eventId) return r;
+      }
+    } catch (_) {}
+    return null;
   }
 
   String _safeString(String? Function() getter) {
