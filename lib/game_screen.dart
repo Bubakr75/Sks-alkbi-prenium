@@ -17,6 +17,8 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   Carte? _maCarte;
   String _titreScenario = '';
+  String _introScenario = '';
+  Map<int, String> _slotToName = {};
   bool _isLoading = true;
   String? _erreur;
 
@@ -64,6 +66,25 @@ class _GameScreenState extends State<GameScreen> {
           .doc(scenarioId)
           .get();
       final titre = scenarioDoc.data()?['titre'] as String? ?? 'Scenario';
+      final intro = scenarioDoc.data()?['intro'] as String? ?? '';
+
+      // Charge la liste de tous les joueurs pour construire le mapping slot -> prenom
+      final playersSnap = await FirebaseFirestore.instance
+          .collection('rooms')
+          .doc(widget.code)
+          .collection('players')
+          .get();
+
+      final Map<int, String> slotToName = {};
+      for (final p in playersSnap.docs) {
+        final data = p.data();
+        final carte = data['carte'] as Map<String, dynamic>?;
+        final slot = carte?['slot'] as int?;
+        final name = data['name'] as String? ?? '???';
+        if (slot != null) {
+          slotToName[slot] = name;
+        }
+      }
 
       final playerDoc = await FirebaseFirestore.instance
           .collection('rooms')
@@ -86,6 +107,8 @@ class _GameScreenState extends State<GameScreen> {
       setState(() {
         _maCarte = carte;
         _titreScenario = titre;
+        _introScenario = intro;
+        _slotToName = slotToName;
         _isLoading = false;
       });
     } catch (e) {
@@ -155,6 +178,8 @@ class _GameScreenState extends State<GameScreen> {
       prenomJoueur: widget.playerName,
       titreScenario: _titreScenario,
       code: widget.code,
+      introScenario: _introScenario,
+      slotToName: _slotToName,
     );
   }
 }

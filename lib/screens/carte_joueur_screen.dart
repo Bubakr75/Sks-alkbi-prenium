@@ -9,6 +9,8 @@ class CarteJoueurScreen extends StatefulWidget {
   final String prenomJoueur;
   final String titreScenario;
   final String? code;
+  final String introScenario;
+  final Map<int, String> slotToName;
 
   const CarteJoueurScreen({
     super.key,
@@ -16,6 +18,8 @@ class CarteJoueurScreen extends StatefulWidget {
     required this.prenomJoueur,
     required this.titreScenario,
     this.code,
+    this.introScenario = '',
+    this.slotToName = const {},
   });
 
   @override
@@ -25,14 +29,17 @@ class CarteJoueurScreen extends StatefulWidget {
 class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
   bool _secretRevealed = false;
   bool _voteRequested = false;
+  bool _introExpanded = true;
+
+  String _nameForSlot(int slot) {
+    return widget.slotToName[slot] ?? 'Joueur $slot';
+  }
 
   Future<void> _demanderVote() async {
     if (widget.code == null) return;
-
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) return;
-
       await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
@@ -43,7 +50,6 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         'name': widget.prenomJoueur,
         'timestamp': FieldValue.serverTimestamp(),
       });
-
       setState(() => _voteRequested = true);
     } catch (e) {
       if (mounted) {
@@ -65,6 +71,50 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (widget.introScenario.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber, width: 2),
+              ),
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  initiallyExpanded: _introExpanded,
+                  onExpansionChanged: (v) => setState(() => _introExpanded = v),
+                  iconColor: Colors.amber,
+                  collapsedIconColor: Colors.amber,
+                  title: const Row(
+                    children: [
+                      Icon(Icons.menu_book, color: Colors.amber),
+                      SizedBox(width: 8),
+                      Text('HISTOIRE',
+                          style: TextStyle(
+                              color: Colors.amber,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2)),
+                    ],
+                  ),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Text(
+                        widget.introScenario,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          height: 1.5,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
@@ -155,6 +205,9 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
           _sectionLien(_safeObj<Lien>(() => (widget.carte as dynamic).lienFort)),
           _sectionListObservations('👁️ Tes observations', Colors.tealAccent,
               _safeList<Observation>(() => (widget.carte as dynamic).observations)),
+          _sectionListTemoignages('💬 Reponses preparees aux questions',
+              Colors.lightGreenAccent,
+              _safeList<Temoignage>(() => (widget.carte as dynamic).temoignages)),
           _sectionDilemme(_safeObj<Dilemme>(() => (widget.carte as dynamic).dilemme)),
           if (isCoupable && missionSec.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -283,11 +336,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
   }
 
   String _safeString(String? Function() getter) {
-    try {
-      return getter() ?? '';
-    } catch (_) {
-      return '';
-    }
+    try { return getter() ?? ''; } catch (_) { return ''; }
   }
 
   List<String> _safeStringList(dynamic Function() getter) {
@@ -295,9 +344,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
       final v = getter();
       if (v is List) return v.map((e) => e.toString()).toList();
       return [];
-    } catch (_) {
-      return [];
-    }
+    } catch (_) { return []; }
   }
 
   List<T> _safeList<T>(dynamic Function() getter) {
@@ -306,9 +353,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
       if (v is List<T>) return v;
       if (v is List) return v.cast<T>();
       return <T>[];
-    } catch (_) {
-      return <T>[];
-    }
+    } catch (_) { return <T>[]; }
   }
 
   T? _safeObj<T>(dynamic Function() getter) {
@@ -316,21 +361,15 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
       final v = getter();
       if (v is T) return v;
       return null;
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
   }
 
   String _emojiPourRole(String role) {
     switch (role) {
-      case 'coupable':
-        return '🔴';
-      case 'temoin':
-        return '👁️';
-      case 'detective':
-        return '🕵️';
-      default:
-        return '🎭';
+      case 'coupable': return '🔴';
+      case 'temoin': return '👁️';
+      case 'detective': return '🕵️';
+      default: return '🎭';
     }
   }
 
@@ -342,8 +381,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         iconColor: couleur,
         collapsedIconColor: couleur,
         title: Text(titre,
-            style: TextStyle(
-                color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
@@ -364,31 +402,59 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         iconColor: couleur,
         collapsedIconColor: couleur,
         title: Text(titre,
-            style: TextStyle(
-                color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
-        children: items
-            .map((e) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('• ', style: TextStyle(color: couleur)),
-                      Expanded(
-                        child: Text(e,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 14)),
-                      ),
-                    ],
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+        children: items.map((e) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('• ', style: TextStyle(color: couleur)),
+                Expanded(child: Text(e, style: const TextStyle(color: Colors.white, fontSize: 14))),
+              ]),
+            )).toList(),
+      ),
+    );
+  }
+
+  Widget _sectionListQuestions(String titre, Color couleur, List<Question> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Card(
+      color: const Color(0xFF2A2A3E),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ExpansionTile(
+        iconColor: couleur,
+        collapsedIconColor: couleur,
+        title: Text(titre,
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+        children: items.map((q) {
+          final cible = _nameForSlot(q.cibleSlot);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: couleur.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                ))
-            .toList(),
+                  child: Text('➡️ Pose à $cible',
+                      style: TextStyle(
+                          color: couleur,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 4),
+                Text('« ${q.texte} »',
+                    style: const TextStyle(color: Colors.white, fontSize: 14)),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _sectionListQuestions(
-      String titre, Color couleur, List<Question> items) {
+  Widget _sectionListAccusations(String titre, Color couleur, List<Accusation> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Card(
       color: const Color(0xFF2A2A3E),
@@ -397,73 +463,59 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         iconColor: couleur,
         collapsedIconColor: couleur,
         title: Text(titre,
-            style: TextStyle(
-                color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
-        children: items
-            .map((q) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('• ${q.texte}',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14)),
-                ))
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _sectionListAccusations(
-      String titre, Color couleur, List<Accusation> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Card(
-      color: const Color(0xFF2A2A3E),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ExpansionTile(
-        iconColor: couleur,
-        collapsedIconColor: couleur,
-        title: Text(titre,
-            style: TextStyle(
-                color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
-        children: items
-            .map((a) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('• ${a.texte}',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14)),
-                ))
-            .toList(),
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+        children: items.map((a) {
+          final cible = _nameForSlot(a.cibleSlot);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: couleur.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text('🎯 Contre $cible',
+                      style: TextStyle(
+                          color: couleur,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 4),
+                Text('« ${a.texte} »',
+                    style: const TextStyle(color: Colors.white, fontSize: 14)),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
   Widget _sectionLien(Lien? lien) {
     if (lien == null) return const SizedBox.shrink();
+    final cible = _nameForSlot(lien.cibleSlot);
     return Card(
       color: const Color(0xFF2A2A3E),
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: ExpansionTile(
         iconColor: Colors.cyan,
         collapsedIconColor: Colors.cyan,
-        title: const Text('🔗 Ton lien fort',
-            style: TextStyle(
-                color: Colors.cyan,
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
+        title: Text('🔗 Ton lien fort avec $cible',
+            style: const TextStyle(color: Colors.cyan, fontSize: 16, fontWeight: FontWeight.bold)),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(lien.description,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 14)),
+                Text(lien.description, style: const TextStyle(color: Colors.white, fontSize: 14)),
                 if (lien.avertissement.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text('⚠️ ${lien.avertissement}',
-                      style: const TextStyle(
-                          color: Colors.orangeAccent, fontSize: 13)),
+                      style: const TextStyle(color: Colors.orangeAccent, fontSize: 13)),
                 ],
               ],
             ),
@@ -473,8 +525,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
     );
   }
 
-  Widget _sectionListObservations(
-      String titre, Color couleur, List<Observation> items) {
+  Widget _sectionListObservations(String titre, Color couleur, List<Observation> items) {
     if (items.isEmpty) return const SizedBox.shrink();
     return Card(
       color: const Color(0xFF2A2A3E),
@@ -483,17 +534,94 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         iconColor: couleur,
         collapsedIconColor: couleur,
         title: Text(titre,
-            style: TextStyle(
-                color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
-        children: items
-            .map((o) => Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: Text('• ${o.texte}',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 14)),
-                ))
-            .toList(),
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+        children: items.map((o) {
+          final cible = _nameForSlot(o.cibleSlot);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Sur $cible',
+                    style: TextStyle(color: couleur, fontSize: 13, fontWeight: FontWeight.bold)),
+                Text('• ${o.texte}', style: const TextStyle(color: Colors.white, fontSize: 14)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _sectionListTemoignages(String titre, Color couleur, List<Temoignage> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Card(
+      color: const Color(0xFF2A2A3E),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ExpansionTile(
+        iconColor: couleur,
+        collapsedIconColor: couleur,
+        title: Text(titre,
+            style: TextStyle(color: couleur, fontSize: 16, fontWeight: FontWeight.bold)),
+        children: items.map((t) {
+          final demandeur = _nameForSlot(t.demandeurSlot);
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: couleur.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text('Si $demandeur te demande...',
+                      style: TextStyle(color: couleur, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+                const SizedBox(height: 6),
+                Text(t.contexte,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, fontStyle: FontStyle.italic)),
+                const SizedBox(height: 12),
+                _temoignageOption('VERITE', Colors.green, t.optionVerite, '+${t.pointsVerite} pt'),
+                const SizedBox(height: 8),
+                _temoignageOption('ENFONCER', Colors.orange, t.optionEnfoncer,
+                    '+${t.pointsEnfoncerReussi} si ca marche, ${t.pointsEnfoncerEchec} sinon'),
+                const SizedBox(height: 8),
+                _temoignageOption('MENTIR', Colors.red, t.optionMentir,
+                    '+${t.pointsMentirReussi} si credible, ${t.pointsMentirEchec} si grille'),
+                const Divider(color: Colors.white24, height: 24),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _temoignageOption(String label, Color color, String texte, String points) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(label,
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(width: 8),
+              Text('($points)',
+                  style: const TextStyle(color: Colors.white60, fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(texte, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        ],
       ),
     );
   }
@@ -507,10 +635,7 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
         iconColor: Colors.pinkAccent,
         collapsedIconColor: Colors.pinkAccent,
         title: const Text('⚡ Ton dilemme (1 fois max)',
-            style: TextStyle(
-                color: Colors.pinkAccent,
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
+            style: TextStyle(color: Colors.pinkAccent, fontSize: 16, fontWeight: FontWeight.bold)),
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
@@ -518,35 +643,20 @@ class _CarteJoueurScreenState extends State<CarteJoueurScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Option A : ${d.optionATitre}',
-                    style: const TextStyle(
-                        color: Colors.greenAccent,
-                        fontWeight: FontWeight.bold)),
-                Text(d.optionADescription,
-                    style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 4),
-                Text('+ ${d.optionAAvantage}',
-                    style: const TextStyle(color: Colors.green, fontSize: 12)),
-                Text('- ${d.optionARisque}',
-                    style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                Text(d.optionADescription, style: const TextStyle(color: Colors.white70)),
+                Text('+ ${d.optionAAvantage}', style: const TextStyle(color: Colors.green, fontSize: 12)),
+                Text('- ${d.optionARisque}', style: const TextStyle(color: Colors.red, fontSize: 12)),
                 const SizedBox(height: 12),
                 Text('Option B : ${d.optionBTitre}',
-                    style: const TextStyle(
-                        color: Colors.orangeAccent,
-                        fontWeight: FontWeight.bold)),
-                Text(d.optionBDescription,
-                    style: const TextStyle(color: Colors.white70)),
-                const SizedBox(height: 4),
-                Text('+ ${d.optionBAvantage}',
-                    style: const TextStyle(color: Colors.green, fontSize: 12)),
-                Text('- ${d.optionBRisque}',
-                    style: const TextStyle(color: Colors.red, fontSize: 12)),
+                    style: const TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.bold)),
+                Text(d.optionBDescription, style: const TextStyle(color: Colors.white70)),
+                Text('+ ${d.optionBAvantage}', style: const TextStyle(color: Colors.green, fontSize: 12)),
+                Text('- ${d.optionBRisque}', style: const TextStyle(color: Colors.red, fontSize: 12)),
                 const SizedBox(height: 12),
                 Text('Option C : ${d.optionCTitre}',
-                    style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold)),
-                Text(d.optionCDescription,
-                    style: const TextStyle(color: Colors.white70)),
+                    style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                Text(d.optionCDescription, style: const TextStyle(color: Colors.white70)),
               ],
             ),
           ),
