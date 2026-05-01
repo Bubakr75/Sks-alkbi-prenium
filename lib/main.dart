@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'create_room_screen.dart';
+import 'screens/choix_scenario_screen.dart';
 import 'join_room_screen.dart';
 import 'utils/seed_scenarios.dart';
 import 'services/scenario_service.dart';
@@ -135,7 +136,7 @@ class HomeScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const CreateRoomScreen()),
+                      MaterialPageRoute(builder: (context) => const ChoixScenarioScreen()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -201,3 +202,4 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+

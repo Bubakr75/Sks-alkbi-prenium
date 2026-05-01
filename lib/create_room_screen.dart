@@ -6,7 +6,8 @@ import 'game_screen.dart';
 import 'services/scenario_service.dart';
 
 class CreateRoomScreen extends StatefulWidget {
-  const CreateRoomScreen({super.key});
+  final String scenarioId;
+  const CreateRoomScreen({super.key, this.scenarioId = 'penalty_manque'});
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -42,7 +43,7 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         'code': code,
         'hostUid': uid,
         'status': 'waiting',
-        'scenarioId': 'penalty_manque',
+        'scenarioId': widget.scenarioId,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -229,7 +230,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
-          .update({'status': 'playing', 'gameStartedAt': FieldValue.serverTimestamp()});
+          .update({'status': 'playing', 'gameStartedAt': FieldValue.serverTimestamp(), 'manche': 1});
 
     } catch (e) {
       if (mounted) {
@@ -390,4 +391,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 }
+
+
 

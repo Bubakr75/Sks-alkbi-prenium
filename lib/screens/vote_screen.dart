@@ -1,7 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'verdict_screen.dart';
+import 'classement_manche_screen.dart';
+import 'finale_screen.dart';
 
 class VoteScreen extends StatefulWidget {
   final String code;
@@ -17,6 +18,7 @@ class _VoteScreenState extends State<VoteScreen> {
   String? _selectedUid;
   bool _hasVoted = false;
   bool _isSubmitting = false;
+  bool _navigated = false;
 
   Future<void> _submitVote() async {
     if (_selectedUid == null) return;
@@ -26,17 +28,35 @@ class _VoteScreenState extends State<VoteScreen> {
       final myUid = FirebaseAuth.instance.currentUser?.uid;
       if (myUid == null) return;
 
-      await FirebaseFirestore.instance
-          .collection('rooms')
-          .doc(widget.code)
-          .collection('votes')
-          .doc(myUid)
-          .set({
-        'voterUid': myUid,
-        'voterName': widget.playerName,
-        'targetUid': _selectedUid,
-        'timestamp': FieldValue.serverTimestamp(),
+      final roomRef = FirebaseFirestore.instance.collection('rooms').doc(widget.code);
+      final roomSnap = await roomRef.get();
+      final roomData = roomSnap.data() ?? {};
+      final manche = roomData['manche'] ?? 1;
+      final mancheKey = 'manche_$manche';
+      final hostUid = roomData['hostUid'];
+      final coupablesParManche = List<dynamic>.from(roomData['coupablesParManche'] ?? []);
+
+      // 1. Enregistrer le vote dans votesParManche.manche_X
+      await roomRef.update({
+        'votesParManche.$mancheKey.$myUid': _selectedUid,
       });
+
+      // 2. L hote enregistre le coupable de la manche (une seule fois)
+      if (myUid == hostUid && coupablesParManche.length < manche) {
+        final joueursSnap = await roomRef.collection('joueurs').get();
+        String? coupableUid;
+        for (var j in joueursSnap.docs) {
+          final d = j.data();
+          if (d['roleKey'] == 'coupable') {
+            coupableUid = j.id;
+            break;
+          }
+        }
+        if (coupableUid != null) {
+          coupablesParManche.add(coupableUid);
+          await roomRef.update({'coupablesParManche': coupablesParManche});
+        }
+      }
 
       setState(() {
         _hasVoted = true;
@@ -68,7 +88,7 @@ class _VoteScreenState extends State<VoteScreen> {
         stream: FirebaseFirestore.instance
             .collection('rooms')
             .doc(widget.code)
-            .collection('players')
+            .collection('joueurs')
             .snapshots(),
         builder: (context, playersSnap) {
           if (!playersSnap.hasData) {
@@ -80,24 +100,33 @@ class _VoteScreenState extends State<VoteScreen> {
           final players = playersSnap.data!.docs;
           final totalPlayers = players.length;
 
-          return StreamBuilder<QuerySnapshot>(
+          return StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('rooms')
                 .doc(widget.code)
-                .collection('votes')
                 .snapshots(),
-            builder: (context, votesSnap) {
-              final votesCount = votesSnap.data?.docs.length ?? 0;
+            builder: (context, roomSnap) {
+              final roomData = roomSnap.data?.data() as Map<String, dynamic>?;
+              final manche = roomData?['manche'] ?? 1;
+              final totalManches = roomData?['totalManches'] ?? 3;
+              final votesParManche = (roomData?['votesParManche'] ?? {}) as Map<String, dynamic>;
+              final votesM = (votesParManche['manche_$manche'] ?? {}) as Map<String, dynamic>;
+              final votesCount = votesM.length;
 
-              if (votesCount >= totalPlayers && totalPlayers > 0) {
+              // Quand tous ont vote, redirection vers Classement ou Finale
+              if (votesCount >= totalPlayers && totalPlayers > 0 && !_navigated) {
+                _navigated = true;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
-                        builder: (_) => VerdictScreen(
-                          code: widget.code,
-                          playerName: widget.playerName,
-                        ),
+                        builder: (_) => manche >= totalManches
+                            ? FinaleScreen(code: widget.code)
+                            : ClassementMancheScreen(
+                                code: widget.code,
+                                mancheTerminee: manche,
+                                totalManches: totalManches,
+                              ),
                       ),
                     );
                   }
@@ -117,6 +146,16 @@ class _VoteScreenState extends State<VoteScreen> {
                       ),
                       child: Column(
                         children: [
+                          Text(
+                            'MANCHE $manche / $totalManches',
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           const Text(
                             'Qui est le coupable ?',
                             style: TextStyle(
@@ -133,6 +172,15 @@ class _VoteScreenState extends State<VoteScreen> {
                               fontSize: 14,
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '🔒 Vote secret - non revele avant la finale',
+                            style: TextStyle(
+                              color: Colors.amberAccent,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -143,11 +191,11 @@ class _VoteScreenState extends State<VoteScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.check_circle,
-                                  color: Colors.green, size: 80),
+                              const Icon(Icons.lock,
+                                  color: Colors.amber, size: 80),
                               const SizedBox(height: 16),
                               const Text(
-                                'Ton vote est enregistre !',
+                                'Ton vote secret est enregistre !',
                                 style: TextStyle(
                                     color: Colors.white, fontSize: 18),
                               ),
@@ -159,7 +207,7 @@ class _VoteScreenState extends State<VoteScreen> {
                               ),
                               const SizedBox(height: 24),
                               const CircularProgressIndicator(
-                                  color: Colors.green),
+                                  color: Colors.amber),
                             ],
                           ),
                         ),
@@ -171,7 +219,7 @@ class _VoteScreenState extends State<VoteScreen> {
                           itemBuilder: (context, index) {
                             final p = players[index];
                             final data = p.data() as Map<String, dynamic>;
-                            final uid = data['uid'] as String? ?? p.id;
+                            final uid = p.id;
                             final name = data['name'] as String? ?? '???';
                             final isMe = uid == myUid;
                             final isSelected = _selectedUid == uid;
@@ -212,8 +260,7 @@ class _VoteScreenState extends State<VoteScreen> {
                                 title: Text(
                                   isMe ? '$name (toi)' : name,
                                   style: TextStyle(
-                                    color:
-                                        isMe ? Colors.grey : Colors.white,
+                                    color: isMe ? Colors.grey : Colors.white,
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                   ),
