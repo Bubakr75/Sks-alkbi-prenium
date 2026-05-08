@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
-import '../game_screen.dart';
 import 'vote_predictif_screen.dart';
 
 class IaGenerationScreen extends StatefulWidget {
@@ -258,6 +257,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
 
 
 
