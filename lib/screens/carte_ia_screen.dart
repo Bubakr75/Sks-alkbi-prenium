@@ -163,7 +163,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(8),
-                        color: Colors.purple.withOpacity(0.3),
+                        color: Colors.purple.withValues(alpha: 0.3),
                         child: Text(
                           'Prêts à voter : $reqCount / $totalPlayers',
                           textAlign: TextAlign.center,
@@ -182,7 +182,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                                 margin: const EdgeInsets.only(bottom: 16),
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.12),
+                                  color: Colors.amber.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(color: Colors.amber, width: 2),
                                 ),
@@ -222,7 +222,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: couleur, width: 3),
-                                color: couleur.withOpacity(0.1),
+                                color: couleur.withValues(alpha: 0.1),
                               ),
                               child: Column(
                                 children: [
@@ -273,7 +273,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: isCoupable
-                                      ? Colors.red.withOpacity(0.15)
+                                      ? Colors.red.withValues(alpha: 0.15)
                                       : Colors.white10,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
@@ -330,7 +330,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.purple.withOpacity(0.15),
+                                    color: Colors.purple.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.purple, width: 1.5),
                                   ),
@@ -376,7 +376,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: Colors.blue.withOpacity(0.15),
+                                    color: Colors.blue.withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(color: Colors.blue, width: 2),
                                   ),
@@ -458,9 +458,9 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: couleur.withOpacity(0.1),
+        color: couleur.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: couleur.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: couleur.withValues(alpha: 0.5), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,3 +484,4 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
     );
   }
 }
+

@@ -74,9 +74,9 @@ class _ScoringScreenState extends State<ScoringScreen> {
 
     for (final j in joueurs) {
       final Map<String, double> traitPct = {};
-      compteurs[j.id]!.forEach((trait, count) {
+      compteurs[j.id]!.forEach((trait, voteCount) {
         traitPct[trait] = maxVotesPossibles > 0
-            ? (count / maxVotesPossibles) * 100
+            ? (voteCount / maxVotesPossibles) * 100
             : 0.0;
       });
       profils[j.id] = traitPct;
@@ -170,7 +170,7 @@ class _ScoringScreenState extends State<ScoringScreen> {
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: isMe
-                        ? Colors.green.withOpacity(0.1)
+                        ? Colors.green.withValues(alpha: 0.1)
                         : Colors.white10,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
@@ -362,3 +362,5 @@ class _ScoringScreenState extends State<ScoringScreen> {
     );
   }
 }
+
+

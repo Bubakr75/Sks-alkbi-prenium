@@ -262,7 +262,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                           decoration: BoxDecoration(
                             color: isMe
-                                ? Colors.green.withOpacity(0.15)
+                                ? Colors.green.withValues(alpha: 0.15)
                                 : Colors.white10,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -283,7 +283,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.withOpacity(0.2),
+                                  color: Colors.amber.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(color: Colors.amber),
                                 ),
@@ -342,3 +342,4 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
     );
   }
 }
+

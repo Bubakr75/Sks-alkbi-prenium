@@ -1,4 +1,4 @@
-name: sks_alibi
+﻿name: sks_alibi
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -40,6 +40,7 @@ dependencies:
   provider: ^6.1.5+1
   uuid: ^4.5.3
   shared_preferences: ^2.5.5
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:
@@ -93,3 +94,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+

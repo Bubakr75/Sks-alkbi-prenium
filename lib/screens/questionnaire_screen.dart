@@ -46,7 +46,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
   bool _waitingOthers = false;
   bool _navigated = false;
 
-  List<DocumentSnapshot> _autrесJoueurs = [];
+  List<DocumentSnapshot> _autresJoueurs = [];
   String _myUid = '';
   bool _loadingPlayers = true;
 
@@ -64,7 +64,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
         .collection('players')
         .get();
     setState(() {
-      _autrесJoueurs = snap.docs.where((d) => d.id != _myUid).toList();
+      _autresJoueurs = snap.docs.where((d) => d.id != _myUid).toList();
       _loadingPlayers = false;
     });
   }
@@ -186,7 +186,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.green.withOpacity(0.5), width: 2),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.5), width: 2),
                 ),
                 child: Text(
                   question['texte']!,
@@ -208,9 +208,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
               const SizedBox(height: 12),
               Expanded(
                 child: ListView.builder(
-                  itemCount: _autrесJoueurs.length,
+                  itemCount: _autresJoueurs.length,
                   itemBuilder: (context, index) {
-                    final p = _autrесJoueurs[index];
+                    final p = _autresJoueurs[index];
                     final data = p.data() as Map<String, dynamic>;
                     final uid = p.id;
                     final name = data['name'] as String? ?? '???';
@@ -223,7 +223,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? Colors.green.withOpacity(0.25)
+                              ? Colors.green.withValues(alpha: 0.25)
                               : Colors.white10,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
@@ -320,7 +320,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
             final data = snap.data!.data() as Map<String, dynamic>?;
             final mancheKey = 'manche_${widget.manche}';
             final ready = (data?['questionnaireReady']?[mancheKey] ?? {}) as Map<String, dynamic>;
-            final totalJoueurs = _autrесJoueurs.length + 1;
+            final totalJoueurs = _autresJoueurs.length + 1;
             final readyCount = ready.length;
 
             if (readyCount >= totalJoueurs && !_navigated) {
@@ -372,3 +372,5 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen> {
     );
   }
 }
+
+
