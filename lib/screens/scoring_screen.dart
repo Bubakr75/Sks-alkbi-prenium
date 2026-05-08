@@ -82,13 +82,13 @@ class _ScoringScreenState extends State<ScoringScreen>
       noms[j.id] = (j.data()['name'] as String?) ?? '???';
     }
 
-    final questionnaire = (roomData['questionnaire'] ?? {}) as Map<String, dynamic>;
+    final questionnaire = Map<String, dynamic>.from(roomData['questionnaire'] as Map? ?? {});
     final Map<String, Map<String, int>> compteurs = {for (final j in joueurs) j.id: {}};
 
     for (int m = 1; m <= widget.manche; m++) {
-      final mancheData = (questionnaire['manche_$m'] ?? {}) as Map<String, dynamic>;
+      final mancheData = Map<String, dynamic>.from(questionnaire['manche_$m'] as Map? ?? {});
       mancheData.forEach((voterUid, reponses) {
-        (reponses as Map<String, dynamic>).forEach((trait, targetUid) {
+        Map<String, dynamic>.from(reponses as Map? ?? {}).forEach((trait, targetUid) {
           if (compteurs.containsKey(targetUid as String)) {
             compteurs[targetUid]![trait] = (compteurs[targetUid]![trait] ?? 0) + 1;
           }
