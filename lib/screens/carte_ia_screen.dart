@@ -56,7 +56,7 @@ class _CarteIaScreenState extends State<CarteIaScreen> with TickerProviderStateM
     _theme = roomData['iaTheme'] as String? ?? '';
     final playerSnap = await roomRef.collection('players').doc(_myUid).get();
     final playerData = playerSnap.data() ?? {};
-    _carte = playerData['carte'] as Map<String, dynamic>? ?? {};
+    _carte = Map<String, dynamic>.from(playerData['carte'] as Map? ?? {});
     setState(() => _isLoading = false);
   }
 
