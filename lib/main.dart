@@ -2,13 +2,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'screens/choix_scenario_screen.dart';
+import 'screens/test_mode_screen.dart';
 import 'join_room_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -20,10 +19,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SKS Alibi',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-        useMaterial3: true,
-      ),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.green), useMaterial3: true),
       home: const HomeScreen(),
     );
   }
@@ -35,81 +31,117 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      body: Center(
+      backgroundColor: const Color(0xFF0D0D1A),
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('🎭', style: TextStyle(fontSize: 80)),
-              const SizedBox(height: 16),
+              const Spacer(flex: 2),
+
+              // LOGO
+              Container(
+                width: 110, height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF2D5016), Color(0xFF1A3A0A)],
+                  ),
+                  boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 40)],
+                ),
+                child: const Center(child: Text('🎭', style: TextStyle(fontSize: 56))),
+              ),
+              const SizedBox(height: 28),
               const Text(
                 'SKS : Alibi',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
+                style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2),
               ),
               const SizedBox(height: 8),
               const Text(
-                'Le jeu du bluff et de l\'enquete',
-                style: TextStyle(fontSize: 16, color: Colors.white54),
+                'Le jeu du bluff et de l\'enquête',
+                style: TextStyle(fontSize: 15, color: Colors.white38),
               ),
-              const SizedBox(height: 60),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ChoixScenarioScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+
+              const Spacer(flex: 2),
+
+              // BOUTON CRÉER
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChoixScenarioScreen())),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(colors: [Color(0xFF2D7A1F), Color(0xFF1A5C10)]),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [BoxShadow(color: Colors.green.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 6))],
                   ),
-                  child: const Text(
-                    '🏠 Creer un salon',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🏠', style: TextStyle(fontSize: 22)),
+                      SizedBox(width: 10),
+                      Text('Créer un salon', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
               ),
+              const SizedBox(height: 14),
+
+              // BOUTON REJOINDRE
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const JoinRoomScreen())),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🔑', style: TextStyle(fontSize: 22)),
+                      SizedBox(width: 10),
+                      Text('Rejoindre un salon', style: TextStyle(color: Colors.white70, fontSize: 18)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // ⚠️ BOUTON MODE TEST — A SUPPRIMER AVANT PRODUCTION
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TestModeSetupScreen())),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.4), style: BorderStyle.solid),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🤖', style: TextStyle(fontSize: 18)),
+                      SizedBox(width: 10),
+                      Text('Mode Test (solo + IA)', style: TextStyle(color: Colors.orange, fontSize: 15, fontWeight: FontWeight.bold)),
+                      SizedBox(width: 8),
+                      Text('⚠️', style: TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // VERSION
+              const Text('v2.0 — Beta', style: TextStyle(color: Colors.white12, fontSize: 12)),
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const JoinRoomScreen(),
-                      ),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white38),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    '🔑 Rejoindre un salon',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
