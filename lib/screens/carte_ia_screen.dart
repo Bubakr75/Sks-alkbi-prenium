@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'vote_screen.dart';
+import 'defis_secrets_screen.dart';
 
 class CarteIaScreen extends StatefulWidget {
   final String code;
@@ -417,6 +418,31 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
 
                             const SizedBox(height: 24),
 
+                            // BOUTON DÉFI SECRET
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => DefisSecretsScreen(
+                                      code: widget.code,
+                                      playerName: widget.playerName,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.flash_on, color: Colors.white),
+                              label: const Text(
+                                'MON DÉFI SECRET ⚡',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             // BOUTON VOTE
                             ElevatedButton.icon(
                               onPressed: _voteRequested ? null : _demanderVote,
@@ -484,4 +510,5 @@ class _CarteIaScreenState extends State<CarteIaScreen> {
     );
   }
 }
+
 
