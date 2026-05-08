@@ -4,23 +4,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'scoring_screen.dart';
 
 const List<Map<String, String>> kQuestions = [
-  {'trait': 'calme',           'texte': 'Qui garde son sang-froid même quand tout brûle autour de lui ?',         'emoji': '🧊'},
-  {'trait': 'nerveux',         'texte': 'Qui ressent les choses plus intensément que les autres ?',               'emoji': '⚡'},
-  {'trait': 'patient',         'texte': 'Qui peut attendre des heures sans perdre patience ?',                    'emoji': '⏳'},
-  {'trait': 'zen',             'texte': 'Qui reste détendu en toutes circonstances ?',                            'emoji': '🧘'},
-  {'trait': 'flemmard',        'texte': 'Qui trouve toujours le chemin le plus court vers le résultat ?',         'emoji': '😴'},
-  {'trait': 'procrastinateur', 'texte': 'Qui fait tout à la dernière minute — et réussit quand même ?',           'emoji': '🕐'},
-  {'trait': 'retardataire',    'texte': 'Qui arrive toujours après tout le monde mais remarque ce que les autres ont manqué ?', 'emoji': '🚶'},
-  {'trait': 'negociateur',     'texte': 'Qui trouve les mots justes pour que tout le monde soit d\'accord ?',     'emoji': '🤝'},
-  {'trait': 'manipulateur',    'texte': 'Qui influence les autres si naturellement qu\'ils ne s\'en rendent pas compte ?', 'emoji': '🎭'},
-  {'trait': 'voyeur',          'texte': 'Qui n\'hésite pas à enfreindre les règles si cela fait avancer les choses ?', 'emoji': '👁️'},
-  {'trait': 'tete_en_lair',    'texte': 'Qui oublie les détails mais ne perd jamais de vue l\'essentiel ?',       'emoji': '☁️'},
-  {'trait': 'mentor',          'texte': 'Qui reste complètement naturel quelles que soient les circonstances ?',  'emoji': '🦉'},
-  {'trait': 'egoiste',         'texte': 'Qui pense à se protéger avant de penser au groupe ?',                   'emoji': '🛡️'},
-  {'trait': 'lache',           'texte': 'Qui préfère éviter les tensions quand la situation s\'envenime ?',       'emoji': '🐢'},
-  {'trait': 'loyal',           'texte': 'Qui reste fidèle même quand il est plus facile de partir ?',             'emoji': '❤️'},
-  {'trait': 'cupidon',         'texte': 'Qui est le plus motivé par ce qu\'il y a à gagner ?',                   'emoji': '💘'},
-  {'trait': 'heros',           'texte': 'Qui protège les autres avant de se protéger soi-même ?',                'emoji': '🦸'},
+  {'trait': 'manipulateur', 'texte': 'Qui serait capable de te mentir en te regardant droit dans les yeux sans ciller ?',           'emoji': '🎭'},
+  {'trait': 'lache',        'texte': 'Qui disparaîtrait en silence plutôt que d\'affronter une situation difficile ?',               'emoji': '🐢'},
+  {'trait': 'egoiste',      'texte': 'Qui penserait à sauver sa peau en premier si tout s\'effondrait ?',                            'emoji': '🛡️'},
+  {'trait': 'nerveux',      'texte': 'Qui craquerait en premier sous la pression si on le poussait à bout ?',                        'emoji': '⚡'},
+  {'trait': 'voyeur',       'texte': 'Qui irait fouiller là où il ne devrait pas pour obtenir ce qu\'il veut ?',                     'emoji': '👁️'},
+  {'trait': 'negociateur',  'texte': 'Qui trouverait un arrangement même dans la situation la plus désespérée ?',                    'emoji': '🤝'},
+  {'trait': 'calme',        'texte': 'Qui resterait de marbre même si on l\'accusait à tort devant tout le monde ?',                 'emoji': '🧊'},
+  {'trait': 'heros',        'texte': 'Qui prendrait un coup pour protéger quelqu\'un d\'autre, même un inconnu ?',                   'emoji': '🦸'},
+  {'trait': 'loyal',        'texte': 'Qui serait incapable de trahir quelqu\'un même si ça lui coûtait cher ?',                     'emoji': '❤️'},
+  {'trait': 'mentor',       'texte': 'Qui saurait exactement quoi dire pour que tout le monde le suive sans poser de questions ?',   'emoji': '🦉'},
+  {'trait': 'flemmard',     'texte': 'Qui trouverait un moyen de faire faire le travail aux autres tout en prenant le mérite ?',     'emoji': '😴'},
+  {'trait': 'tete_en_lair', 'texte': 'Qui oublierait un détail crucial au pire moment possible ?',                                  'emoji': '☁️'},
+  {'trait': 'cupidon',      'texte': 'Qui serait prêt à tout pour obtenir ce qu\'il convoite, même à en perdre ses valeurs ?',      'emoji': '💘'},
+  {'trait': 'procrastinateur','texte':'Qui attendrait la dernière seconde pour agir, quitte à tout faire foirer ?',                  'emoji': '🕐'},
+  {'trait': 'retardataire', 'texte': 'Qui arriverait après la bataille mais prétendrait avoir tout vu ?',                           'emoji': '🚶'},
+  {'trait': 'patient',      'texte': 'Qui serait capable d\'attendre des mois pour se venger au bon moment ?',                      'emoji': '⏳'},
+  {'trait': 'zen',          'texte': 'Qui sourirait calmement même en sachant que tout part en vrille autour de lui ?',              'emoji': '🧘'},
 ];
 
 class QuestionnaireScreen extends StatefulWidget {
@@ -42,10 +42,11 @@ class QuestionnaireScreen extends StatefulWidget {
 class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     with TickerProviderStateMixin {
   int _currentQuestion = 0;
-  final Map<String, String?> _reponses = {};
+  final Map<String, String> _reponses = {};
   bool _isSubmitting = false;
   bool _waitingOthers = false;
   bool _navigated = false;
+  bool _isTransitioning = false;
 
   List<DocumentSnapshot> _autresJoueurs = [];
   String _myUid = '';
@@ -53,16 +54,20 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   late AnimationController _fadeController;
   late AnimationController _pulseController;
+  late AnimationController _slideController;
   late Animation<double> _fadeAnim;
   late Animation<double> _pulseAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 400));
-    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200), reverseDuration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
+    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _slideController = AnimationController(vsync: this, duration: const Duration(milliseconds: 350));
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _pulseAnim = Tween<double>(begin: 0.85, end: 1.0).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _slideAnim = Tween<Offset>(begin: const Offset(1.0, 0), end: Offset.zero).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOut));
     _chargerJoueurs();
   }
 
@@ -70,6 +75,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
   void dispose() {
     _fadeController.dispose();
     _pulseController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
@@ -85,6 +91,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
       _loadingPlayers = false;
     });
     _fadeController.forward();
+    _slideController.forward();
   }
 
   List<Map<String, String>> get _questions10 {
@@ -94,27 +101,44 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
 
   late final List<Map<String, String>> _questionsChoisies = _questions10;
 
-  void _selectionnerJoueur(String uid) {
-    setState(() {
-      _reponses[_questionsChoisies[_currentQuestion]['trait']!] = uid;
-    });
-  }
+  // ── AUTO-AVANCE dès la sélection ─────────────────────────────────────────
+  Future<void> _selectionnerEtAvancer(String uid) async {
+    if (_isTransitioning) return;
+    final trait = _questionsChoisies[_currentQuestion]['trait']!;
 
-  void _questionSuivante() {
+    setState(() {
+      _reponses[trait] = uid;
+      _isTransitioning = true;
+    });
+
+    // Petit délai visuel pour voir la sélection
+    await Future.delayed(const Duration(milliseconds: 450));
+
     if (_currentQuestion < 9) {
+      // Animation de transition
+      await _fadeController.reverse();
+      setState(() {
+        _currentQuestion++;
+        _isTransitioning = false;
+      });
+      _slideController.reset();
       _fadeController.reset();
-      setState(() => _currentQuestion++);
+      _slideController.forward();
       _fadeController.forward();
     } else {
+      setState(() => _isTransitioning = false);
       _soumettreReponses();
     }
   }
 
   void _questionPrecedente() {
-    if (_currentQuestion > 0) {
-      _fadeController.reset();
-      setState(() => _currentQuestion--);
-      _fadeController.forward();
+    if (_currentQuestion > 0 && !_isTransitioning) {
+      _fadeController.reverse().then((_) {
+        setState(() => _currentQuestion--);
+        _fadeController.forward();
+        _slideController.reset();
+        _slideController.forward();
+      });
     }
   }
 
@@ -122,35 +146,28 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     setState(() => _isSubmitting = true);
     try {
       final mancheKey = 'manche_${widget.manche}';
-      final batch = FirebaseFirestore.instance.batch();
       final roomRef = FirebaseFirestore.instance.collection('rooms').doc(widget.code);
 
+      // Un seul update groupé pour la cohérence
+      final Map<String, dynamic> updates = {};
       _reponses.forEach((trait, targetUid) {
-        if (targetUid != null) {
-          batch.update(roomRef, {
-            'questionnaire.$mancheKey.$_myUid.$trait': targetUid,
-          });
-        }
+        updates['questionnaire.$mancheKey.$_myUid.$trait'] = targetUid;
       });
+      updates['questionnaireReady.$mancheKey.$_myUid'] = true;
 
-      await batch.commit();
-      await roomRef.update({'questionnaireReady.$mancheKey.$_myUid': true});
+      await roomRef.update(updates);
 
       setState(() { _isSubmitting = false; _waitingOthers = true; });
     } catch (e) {
       setState(() => _isSubmitting = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur : $e'),
-            backgroundColor: Colors.red.shade800,
-          ),
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red.shade800),
         );
       }
     }
   }
 
-  // ─── COULEURS PAR TRAIT ───────────────────────────────────────────────────
   Color _traitColor(String trait) {
     const map = {
       'calme': Color(0xFF00BCD4), 'nerveux': Color(0xFFFF5722),
@@ -180,270 +197,229 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     final traitActuel = question['trait']!;
     final reponseActuelle = _reponses[traitActuel];
     final traitColor = _traitColor(traitActuel);
-    final progress = (_currentQuestion + 1) / 10;
-
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D1A),
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: Column(
-            children: [
-              // ── HEADER ──────────────────────────────────────────────────
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            '${_currentQuestion + 1} / 10',
-                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [traitColor.withValues(alpha: 0.3), traitColor.withValues(alpha: 0.1)]),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: traitColor.withValues(alpha: 0.5)),
-                          ),
-                          child: Text(
-                            'MANCHE ${widget.manche}',
-                            style: TextStyle(color: traitColor, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.2),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Barre de progression animée
-                    Stack(
-                      children: [
-                        Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                        AnimatedFractionallySizedBox(
-                          duration: const Duration(milliseconds: 400),
-                          curve: Curves.easeOut,
-                          widthFactor: progress,
-                          child: Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(colors: [traitColor, traitColor.withValues(alpha: 0.6)]),
-                              borderRadius: BorderRadius.circular(3),
-                              boxShadow: [BoxShadow(color: traitColor.withValues(alpha: 0.5), blurRadius: 8)],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── CARTE QUESTION ───────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        traitColor.withValues(alpha: 0.15),
-                        const Color(0xFF1A1A2E),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: traitColor.withValues(alpha: 0.4), width: 1.5),
-                    boxShadow: [
-                      BoxShadow(color: traitColor.withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 2),
-                    ],
-                  ),
-                  child: Column(
+        child: Column(
+          children: [
+            // ── HEADER ──────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        question['emoji'] ?? '❓',
-                        style: const TextStyle(fontSize: 52),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        question['texte']!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          height: 1.5,
+                      if (_currentQuestion > 0)
+                        GestureDetector(
+                          onTap: _questionPrecedente,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
+                            child: const Icon(Icons.arrow_back_rounded, color: Colors.white54, size: 20),
+                          ),
+                        )
+                      else
+                        const SizedBox(width: 36),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white10,
+                          borderRadius: BorderRadius.circular(20),
                         ),
-                        textAlign: TextAlign.center,
+                        child: Text(
+                          '${_currentQuestion + 1} / 10',
+                          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: traitColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: traitColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          'M${widget.manche}',
+                          style: TextStyle(color: traitColor, fontSize: 13, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              // ── LABEL ────────────────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-                child: Row(
-                  children: [
-                    Icon(Icons.arrow_downward_rounded, color: traitColor, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Désigne le joueur qui correspond le mieux',
-                      style: TextStyle(color: Colors.white54, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── LISTE JOUEURS ─────────────────────────────────────────────
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: _autresJoueurs.length,
-                  itemBuilder: (context, index) {
-                    final p = _autresJoueurs[index];
-                    final data = p.data() as Map<String, dynamic>;
-                    final uid = p.id;
-                    final name = data['name'] as String? ?? '???';
-                    final isSelected = reponseActuelle == uid;
-                    final initiale = name[0].toUpperCase();
-
-                    return GestureDetector(
-                      onTap: () => _selectionnerJoueur(uid),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  const SizedBox(height: 12),
+                  // Barre de progression par points
+                  Row(
+                    children: List.generate(10, (i) => Expanded(
+                      child: Container(
+                        height: 4,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? LinearGradient(colors: [traitColor.withValues(alpha: 0.25), traitColor.withValues(alpha: 0.05)])
-                              : null,
-                          color: isSelected ? null : const Color(0xFF1E1E30),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? traitColor : Colors.white12,
-                            width: isSelected ? 2 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [BoxShadow(color: traitColor.withValues(alpha: 0.3), blurRadius: 12)]
+                          color: i <= _currentQuestion ? traitColor : Colors.white10,
+                          borderRadius: BorderRadius.circular(2),
+                          boxShadow: i == _currentQuestion
+                              ? [BoxShadow(color: traitColor.withValues(alpha: 0.6), blurRadius: 6)]
                               : [],
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: isSelected
-                                      ? [traitColor, traitColor.withValues(alpha: 0.6)]
-                                      : [Colors.white24, Colors.white10],
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  initiale,
-                                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              name,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.white70,
-                                fontSize: 17,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                            const Spacer(),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: isSelected
-                                  ? Icon(Icons.check_circle_rounded, color: traitColor, size: 28, key: const ValueKey('check'))
-                                  : Icon(Icons.radio_button_unchecked, color: Colors.white24, size: 26, key: const ValueKey('empty')),
-                            ),
-                          ],
-                        ),
                       ),
-                    );
-                  },
+                    )),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── CARTE QUESTION ───────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: SlideTransition(
+                position: _slideAnim,
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [traitColor.withValues(alpha: 0.18), const Color(0xFF12122A)],
+                      ),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: traitColor.withValues(alpha: 0.5), width: 1.5),
+                      boxShadow: [BoxShadow(color: traitColor.withValues(alpha: 0.25), blurRadius: 25, spreadRadius: 2)],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(question['emoji'] ?? '❓', style: const TextStyle(fontSize: 54)),
+                        const SizedBox(height: 18),
+                        Text(
+                          question['texte']!,
+                          style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700, height: 1.55),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
+            ),
 
-              // ── BOUTONS NAVIGATION ────────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Row(
-                  children: [
-                    if (_currentQuestion > 0) ...[
-                      GestureDetector(
-                        onTap: _questionPrecedente,
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white10,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
+            // ── INSTRUCTION ──────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+              child: Row(
+                children: [
+                  Icon(Icons.touch_app_rounded, color: traitColor.withValues(alpha: 0.7), size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Touche un joueur — la sélection est immédiate',
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── LISTE JOUEURS ────────────────────────────────────────────────
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _autresJoueurs.length,
+                itemBuilder: (context, index) {
+                  final p = _autresJoueurs[index];
+                  final data = p.data() as Map<String, dynamic>;
+                  final uid = p.id;
+                  final name = data['name'] as String? ?? '???';
+                  final isSelected = reponseActuelle == uid;
+                  final isDisabled = _isTransitioning && !isSelected;
+
+                  return GestureDetector(
+                    onTap: isDisabled ? null : () => _selectionnerEtAvancer(uid),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: isSelected
+                            ? LinearGradient(colors: [traitColor.withValues(alpha: 0.3), traitColor.withValues(alpha: 0.08)])
+                            : null,
+                        color: isSelected ? null : const Color(0xFF1A1A2E),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: isSelected ? traitColor : Colors.white12,
+                          width: isSelected ? 2.5 : 1,
                         ),
+                        boxShadow: isSelected
+                            ? [BoxShadow(color: traitColor.withValues(alpha: 0.4), blurRadius: 16)]
+                            : [],
                       ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: (reponseActuelle == null || _isSubmitting) ? null : _questionSuivante,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            gradient: reponseActuelle != null
-                                ? LinearGradient(colors: [traitColor, traitColor.withValues(alpha: 0.7)])
-                                : null,
-                            color: reponseActuelle == null ? Colors.white12 : null,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: reponseActuelle != null
-                                ? [BoxShadow(color: traitColor.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 4))]
-                                : [],
+                      child: Row(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            width: 48, height: 48,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: isSelected
+                                    ? [traitColor, traitColor.withValues(alpha: 0.6)]
+                                    : [Colors.white24, Colors.white10],
+                              ),
+                              boxShadow: isSelected
+                                  ? [BoxShadow(color: traitColor.withValues(alpha: 0.5), blurRadius: 12)]
+                                  : [],
+                            ),
+                            child: Center(
+                              child: isSelected
+                                  ? const Icon(Icons.check_rounded, color: Colors.white, size: 26)
+                                  : Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                            ),
                           ),
-                          child: Center(
-                            child: _isSubmitting
-                                ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                                : Text(
-                                    _currentQuestion < 9 ? 'Suivant →' : '✅ Envoyer mes réponses',
-                                    style: TextStyle(
-                                      color: reponseActuelle != null ? Colors.white : Colors.white38,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.white70,
+                                    fontSize: 18,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                   ),
+                                ),
+                                if (isSelected)
+                                  Text('Sélectionné ✓', style: TextStyle(color: traitColor, fontSize: 12)),
+                              ],
+                            ),
                           ),
-                        ),
+                          if (_isTransitioning && isSelected)
+                            SizedBox(
+                              width: 20, height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: traitColor),
+                            ),
+                        ],
                       ),
                     ),
+                  );
+                },
+              ),
+            ),
+
+            // ── INDICATEUR SOUMISSION ─────────────────────────────────────────
+            if (_isSubmitting)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54)),
+                    const SizedBox(width: 12),
+                    const Text('Envoi des réponses...', style: TextStyle(color: Colors.white54)),
                   ],
                 ),
-              ),
-            ],
-          ),
+              )
+            else
+              const SizedBox(height: 16),
+          ],
         ),
       ),
     );
@@ -491,8 +467,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                     ScaleTransition(
                       scale: _pulseAnim,
                       child: Container(
-                        width: 100,
-                        height: 100,
+                        width: 100, height: 100,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: const LinearGradient(colors: [Color(0xFF00C853), Color(0xFF1B5E20)]),
@@ -502,43 +477,27 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                       ),
                     ),
                     const SizedBox(height: 32),
-                    const Text(
-                      'Réponses enregistrées !',
-                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'En attente des autres joueurs...',
-                      style: TextStyle(color: Colors.white54, fontSize: 15),
-                      textAlign: TextAlign.center,
-                    ),
+                    const Text('Réponses enregistrées !', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('En attente des autres joueurs...', style: TextStyle(color: Colors.white54, fontSize: 15)),
                     const SizedBox(height: 32),
-                    // Barre de progression joueurs
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white10,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white12),
-                      ),
+                      decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white12)),
                       child: Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text('Joueurs prêts', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                              Text(
-                                '$readyCount / $totalJoueurs',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                              ),
+                              Text('$readyCount / $totalJoueurs', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                             ],
                           ),
                           const SizedBox(height: 12),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
-                              value: readyCount / totalJoueurs,
+                              value: totalJoueurs > 0 ? readyCount / totalJoueurs : 0,
                               backgroundColor: Colors.white12,
                               color: Colors.green,
                               minHeight: 8,
@@ -557,3 +516,4 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
     );
   }
 }
+
