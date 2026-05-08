@@ -186,10 +186,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => GameScreen(
-                code: widget.code,
-                playerName: widget.playerName,
-              ),
+              builder: (_) => VotePredictifScreen(code: widget.code, playerName: widget.playerName,),
             ),
           );
         }
@@ -261,5 +258,6 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
 
 
