@@ -33,7 +33,7 @@ class _FinaleScreenState extends State<FinaleScreen> {
               stream: FirebaseFirestore.instance
                   .collection('rooms')
                   .doc(widget.code)
-                  .collection('joueurs')
+                  .collection('players')
                   .snapshots(),
               builder: (context, joueursSnap) {
                 if (!joueursSnap.hasData) {
@@ -400,3 +400,4 @@ class _FinaleScreenState extends State<FinaleScreen> {
     );
   }
 }
+

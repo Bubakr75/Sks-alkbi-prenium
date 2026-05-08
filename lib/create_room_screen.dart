@@ -43,6 +43,10 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         'code': code,
         'hostUid': uid,
         'status': 'waiting',
+        'totalManches': 3,
+        'manche': 0,
+        'votesParManche': {},
+        'coupablesParManche': [],
         'scenarioId': widget.scenarioId,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -175,7 +179,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
       // 2. Charger le scenario
       final service = ScenarioService();
-      final scenario = await service.chargerScenario('penalty_manque');
+      final scenarioId = (await FirebaseFirestore.instance.collection('rooms').doc(widget.code).get()).data()?['scenarioId'] ?? 'penalty_manque';
+      final scenario = await service.chargerScenario(scenarioId);
 
       if (scenario == null) {
         throw Exception('Scenario introuvable');
@@ -391,6 +396,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 }
+
+
 
 
 

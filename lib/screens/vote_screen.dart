@@ -43,7 +43,7 @@ class _VoteScreenState extends State<VoteScreen> {
 
       // 2. L hote enregistre le coupable de la manche (une seule fois)
       if (myUid == hostUid && coupablesParManche.length < manche) {
-        final joueursSnap = await roomRef.collection('joueurs').get();
+        final joueursSnap = await roomRef.collection('players').get();
         String? coupableUid;
         for (var j in joueursSnap.docs) {
           final d = j.data();
@@ -88,7 +88,7 @@ class _VoteScreenState extends State<VoteScreen> {
         stream: FirebaseFirestore.instance
             .collection('rooms')
             .doc(widget.code)
-            .collection('joueurs')
+            .collection('players')
             .snapshots(),
         builder: (context, playersSnap) {
           if (!playersSnap.hasData) {
@@ -311,3 +311,4 @@ class _VoteScreenState extends State<VoteScreen> {
     );
   }
 }
+

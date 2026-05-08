@@ -57,7 +57,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
         if (scenario == null) throw Exception('Scenario introuvable');
 
         // Recuperer les joueurs
-        final joueursSnap = await roomDoc.collection('joueurs').get();
+        final joueursSnap = await roomDoc.collection('players').get();
         final joueurs = joueursSnap.docs.map((doc) {
           final d = doc.data();
           return JoueurInfo(
@@ -75,7 +75,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
         // Sauvegarder les nouvelles cartes
         for (final joueur in joueurs) {
           final carte = cartesParJoueur[joueur.id]!;
-          await roomDoc.collection('joueurs').doc(joueur.id).update({
+          await roomDoc.collection('players').doc(joueur.id).update({
             'carte': carte.toMap(),
             'roleKey': carte.role,
           });
@@ -145,7 +145,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
               stream: FirebaseFirestore.instance
                   .collection('rooms')
                   .doc(widget.code)
-                  .collection('joueurs')
+                  .collection('players')
                   .snapshots(),
               builder: (context, joueursSnap) {
                 if (!joueursSnap.hasData) {
@@ -353,5 +353,6 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
     );
   }
 }
+
 
 
