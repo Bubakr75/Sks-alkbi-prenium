@@ -102,7 +102,8 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
               _navigated = true;
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
-                  final playerName = '';
+                  final playerSnap = await FirebaseFirestore.instance.collection('rooms').doc(widget.code).collection('players').doc(_myUid).get();
+                    final playerName = playerSnap.data()?['name'] as String? ?? '';
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -342,4 +343,6 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
     );
   }
 }
+
+
 
