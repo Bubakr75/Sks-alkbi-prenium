@@ -39,17 +39,7 @@ class _IaGenerationScreenState extends State<IaGenerationScreen> {
     _generer();
   }
 
-  String _buildPrompt() {
-    // Lire le theme choisi par le joueur depuis Firestore
-    final roomDoc = await FirebaseFirestore.instance.collection('rooms').doc(widget.code).get();
-    final scenarioId = roomDoc.data()?['scenarioId'] as String? ?? 'aleatoire';
-    final themesMap = {
-      'trahison': 'Trahison',
-      'vol': 'Vol',
-      'tromperie': 'Tromperie',
-      'aleatoire': ['Trahison', 'Vol', 'Tromperie'][DateTime.now().millisecond % 3],
-    };
-    final theme = themesMap[scenarioId] ?? 'Trahison';
+  String _buildPrompt(String theme) {
 
     final profilsTexte = widget.noms.entries.map((e) {
       final uid = e.key;
@@ -106,7 +96,17 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     try {
       setState(() => _statut = 'Connexion à l\'IA...');
 
-      final prompt = _buildPrompt();
+      // Lire le theme depuis Firestore
+      final roomDoc = await FirebaseFirestore.instance.collection('rooms').doc(widget.code).get();
+      final scenarioId = roomDoc.data()?['scenarioId'] as String? ?? 'aleatoire';
+      final themesMap = {
+        'trahison': 'Trahison',
+        'vol': 'Vol',
+        'tromperie': 'Tromperie',
+        'aleatoire': ['Trahison', 'Vol', 'Tromperie'][DateTime.now().millisecond % 3],
+      };
+      final theme = themesMap[scenarioId] ?? 'Trahison';
+      final prompt = _buildPrompt(theme);
 
       final response = await http.post(
         Uri.parse('$_baseUrl?key=$_apiKey'),
@@ -135,7 +135,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
 
       final Map<String, dynamic> result = jsonDecode(cleaned);
       final histoire = result['histoire'] as String;
-      final theme = result['theme'] as String;
+      final themeIA = result['theme'] as String? ?? theme;
       final roles = result['roles'] as Map<String, dynamic>;
 
       setState(() => _statut = 'Sauvegarde des cartes...');
@@ -145,7 +145,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
       // Sauvegarder l'histoire dans Firestore
       await roomRef.update({
         'iaHistoire': histoire,
-        'iaTheme': theme,
+        'iaTheme': themeIA,
         'manche': widget.manche,
       });
 
@@ -264,6 +264,9 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
+
+
 
 
 
