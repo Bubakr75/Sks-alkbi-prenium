@@ -3,11 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'game_screen.dart';
-import 'services/scenario_service.dart';
+import 'screens/questionnaire_screen.dart';
 
 class CreateRoomScreen extends StatefulWidget {
   final String scenarioId;
-  const CreateRoomScreen({super.key, this.scenarioId = 'penalty_manque'});
+  const CreateRoomScreen({super.key, this.scenarioId = 'ia'});
 
   @override
   State<CreateRoomScreen> createState() => _CreateRoomScreenState();
@@ -47,7 +47,6 @@ class _CreateRoomScreenState extends State<CreateRoomScreen> {
         'manche': 0,
         'votesParManche': {},
         'coupablesParManche': [],
-        'scenarioId': widget.scenarioId,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -163,79 +162,36 @@ class LobbyScreen extends StatefulWidget {
 
 class _LobbyScreenState extends State<LobbyScreen> {
   bool _isStarting = false;
+  bool _navigated = false;
 
   Future<void> _startGame() async {
     setState(() => _isStarting = true);
 
     try {
-      // 1. Recuperer la liste des joueurs du salon
       final playersSnap = await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
           .collection('players')
           .get();
 
-      final players = playersSnap.docs;
-
-      // 2. Charger le scenario
-      final service = ScenarioService();
-      final scenarioId = (await FirebaseFirestore.instance.collection('rooms').doc(widget.code).get()).data()?['scenarioId'] ?? 'penalty_manque';
-      final scenario = await service.chargerScenario(scenarioId);
-
-      if (scenario == null) {
-        throw Exception('Scenario introuvable');
-      }
-
-      // 3. Verifier le nombre de joueurs
-      if (players.length < scenario.minJoueurs ||
-          players.length > scenario.maxJoueurs) {
+      if (playersSnap.docs.length < 3) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Il faut entre ${scenario.minJoueurs} et ${scenario.maxJoueurs} joueurs (actuel : ${players.length})',
-              ),
-            ),
+            const SnackBar(content: Text('Il faut au moins 3 joueurs pour commencer !')),
           );
         }
         setState(() => _isStarting = false);
         return;
       }
 
-      // 4. Construire la liste des JoueurInfo
-      final joueurs = players.map((doc) {
-        final data = doc.data();
-        return JoueurInfo(
-          id: data['uid'] as String,
-          prenom: data['name'] as String,
-        );
-      }).toList();
-
-      // 5. Distribuer les cartes (melange aleatoire + personnalisation)
-      final cartesParJoueur = service.distribuerCartes(
-        scenario: scenario,
-        joueurs: joueurs,
-      );
-
-      // 6. Sauvegarder chaque carte sous le joueur correspondant
-      for (final joueur in joueurs) {
-        final carte = cartesParJoueur[joueur.id]!;
-        await FirebaseFirestore.instance
-            .collection('rooms')
-            .doc(widget.code)
-            .collection('players')
-            .doc(joueur.id)
-            .update({
-          'carte': carte.toMap(),
-          'roleKey': carte.role,
-        });
-      }
-
-      // 7. Passer le statut a "playing"
+      // Lancer le questionnaire : status -> questionnaire, manche -> 1
       await FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.code)
-          .update({'status': 'playing', 'gameStartedAt': FieldValue.serverTimestamp(), 'manche': 1});
+          .update({
+        'status': 'questionnaire',
+        'manche': 1,
+      });
 
     } catch (e) {
       if (mounted) {
@@ -245,9 +201,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
       }
     }
 
-    if (mounted) {
-      setState(() => _isStarting = false);
-    }
+    if (mounted) setState(() => _isStarting = false);
   }
 
   @override
@@ -317,10 +271,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         ),
                         child: Row(
                           children: [
-                            Text(
-                              isPlayerHost ? '👑' : '🎭',
-                              style: const TextStyle(fontSize: 24),
-                            ),
+                            Text(isPlayerHost ? '👑' : '🎭', style: const TextStyle(fontSize: 24)),
                             const SizedBox(width: 12),
                             Text(
                               player['name'] ?? 'Joueur',
@@ -329,10 +280,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                             if (isPlayerHost)
                               const Padding(
                                 padding: EdgeInsets.only(left: 8),
-                                child: Text(
-                                  'Hote',
-                                  style: TextStyle(color: Colors.green, fontSize: 12),
-                                ),
+                                child: Text('Hote', style: TextStyle(color: Colors.green, fontSize: 12)),
                               ),
                           ],
                         ),
@@ -342,6 +290,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 },
               ),
             ),
+            // StreamBuilder qui écoute le statut et redirige tout le monde
             StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('rooms')
@@ -349,18 +298,42 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasData && snapshot.data!.exists) {
-                  final status = (snapshot.data!.data() as Map<String, dynamic>)['status'];
-                  if (status == 'playing') {
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  final status = data['status'] as String? ?? 'waiting';
+                  final manche = data['manche'] as int? ?? 1;
+
+                  if (status == 'questionnaire' && !_navigated) {
+                    _navigated = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GameScreen(
-                            code: widget.code,
-                            playerName: widget.playerName,
+                      if (mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => QuestionnaireScreen(
+                              code: widget.code,
+                              playerName: widget.playerName,
+                              manche: manche,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
+                    });
+                  }
+
+                  if (status == 'playing' && !_navigated) {
+                    _navigated = true;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => GameScreen(
+                              code: widget.code,
+                              playerName: widget.playerName,
+                            ),
+                          ),
+                        );
+                      }
                     });
                   }
                 }
@@ -384,7 +357,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   child: _isStarting
                       ? const CircularProgressIndicator(color: Colors.white)
                       : const Text(
-                          'Lancer la partie !',
+                          '🚀 Lancer la partie !',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                 ),
@@ -396,8 +369,3 @@ class _LobbyScreenState extends State<LobbyScreen> {
     );
   }
 }
-
-
-
-
-
