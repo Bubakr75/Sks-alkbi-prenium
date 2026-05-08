@@ -40,9 +40,16 @@ class _IaGenerationScreenState extends State<IaGenerationScreen> {
   }
 
   String _buildPrompt() {
-    final themes = ['Trahison', 'Vol', 'Tromperie'];
-    themes.shuffle();
-    final theme = themes.first;
+    // Lire le theme choisi par le joueur depuis Firestore
+    final roomDoc = await FirebaseFirestore.instance.collection('rooms').doc(widget.code).get();
+    final scenarioId = roomDoc.data()?['scenarioId'] as String? ?? 'aleatoire';
+    final themesMap = {
+      'trahison': 'Trahison',
+      'vol': 'Vol',
+      'tromperie': 'Tromperie',
+      'aleatoire': ['Trahison', 'Vol', 'Tromperie'][DateTime.now().millisecond % 3],
+    };
+    final theme = themesMap[scenarioId] ?? 'Trahison';
 
     final profilsTexte = widget.noms.entries.map((e) {
       final uid = e.key;
@@ -257,6 +264,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
 
 
 
