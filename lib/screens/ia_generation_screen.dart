@@ -224,7 +224,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
       final Map<String, dynamic> result = jsonDecode(cleaned);
       final histoire = result['histoire'] as String;
       final themeIA = result['theme'] as String? ?? theme;
-      final roles = result['roles'] as Map<String, dynamic>;
+      final roles = Map<String, dynamic>.from(result['roles'] as Map? ?? {});
 
       setState(() => _statut = 'Sauvegarde des cartes...');
 
