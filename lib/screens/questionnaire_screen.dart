@@ -325,7 +325,7 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
                 itemCount: _autresJoueurs.length,
                 itemBuilder: (context, index) {
                   final p = _autresJoueurs[index];
-                  final data = p.data() as Map<String, dynamic>;
+                  final data = Map<String, dynamic>.from(p.data() as Map? ?? {});
                   final uid = p.id;
                   final name = data['name'] as String? ?? '???';
                   final isSelected = reponseActuelle == uid;
@@ -434,9 +434,9 @@ class _QuestionnaireScreenState extends State<QuestionnaireScreen>
           stream: FirebaseFirestore.instance.collection('rooms').doc(widget.code).snapshots(),
           builder: (context, snap) {
             if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: Colors.amber));
-            final data = snap.data!.data() as Map<String, dynamic>?;
+            final data = Map<String, dynamic>.from(snap.data!.data() as Map? ?? {});
             final mancheKey = 'manche_${widget.manche}';
-            final ready = (data?['questionnaireReady']?[mancheKey] ?? {}) as Map<String, dynamic>;
+            final ready = Map<String, dynamic>.from((data['questionnaireReady']?[mancheKey] ?? {}) as Map? ?? {});
             final totalJoueurs = _autresJoueurs.length + 1;
             final readyCount = ready.length;
 

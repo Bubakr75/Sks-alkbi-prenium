@@ -27,7 +27,7 @@ class _FinaleScreenState extends State<FinaleScreen> {
     // Points votes finaux
     for (int i = 0; i < coupablesParManche.length; i++) {
       final mancheKey = 'manche_${i + 1}';
-      final votesM = (votesParManche[mancheKey] ?? {}) as Map<String, dynamic>;
+      final votesM = Map<String, dynamic>.from((votesParManche[mancheKey] ?? {}) as Map? ?? {});
       final coupableUid = coupablesParManche[i];
       if (votesM[uid] == coupableUid) total += 3;
     }
@@ -35,7 +35,7 @@ class _FinaleScreenState extends State<FinaleScreen> {
     // Points vote prédictif (+2 si correct)
     for (int i = 0; i < coupablesParManche.length; i++) {
       final mancheKey = 'manche_${i + 1}';
-      final predM = (votesPredictifs[mancheKey] ?? {}) as Map<String, dynamic>;
+      final predM = Map<String, dynamic>.from((votesPredictifs[mancheKey] ?? {}) as Map? ?? {});
       final coupableUid = coupablesParManche[i];
       if (predM[uid] == coupableUid) total += 2;
     }
@@ -43,9 +43,9 @@ class _FinaleScreenState extends State<FinaleScreen> {
     // Points défis secrets
     for (int i = 1; i <= totalManches; i++) {
       final mancheKey = 'manche_$i';
-      final defisM = (defisResultats[mancheKey] ?? {}) as Map<String, dynamic>;
+      final defisM = Map<String, dynamic>.from((defisResultats[mancheKey] ?? {}) as Map? ?? {});
       if (defisM.containsKey(uid)) {
-        final resultat = defisM[uid] as Map<String, dynamic>;
+        final resultat = Map<String, dynamic>.from(defisM[uid] as Map? ?? {});
         total += (resultat['points'] as int? ?? 0);
       }
     }
@@ -67,12 +67,7 @@ class _FinaleScreenState extends State<FinaleScreen> {
             if (!roomSnap.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            final roomData = roomSnap.data!.data() as Map<String, dynamic>?;
-            if (roomData == null) {
-              return const Center(
-                child: Text('Salon introuvable', style: TextStyle(color: Colors.white)),
-              );
-            }
+            final roomData = Map<String, dynamic>.from(roomSnap.data!.data() as Map? ?? {});
 
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -86,16 +81,16 @@ class _FinaleScreenState extends State<FinaleScreen> {
                 }
 
                 final joueurs = joueursSnap.data!.docs;
-                final votesParManche = (roomData['votesParManche'] ?? {}) as Map<String, dynamic>;
-                final votesPredictifs = (roomData['votesPredictifs'] ?? {}) as Map<String, dynamic>;
-                final defisResultats = (roomData['defisResultats'] ?? {}) as Map<String, dynamic>;
+                final votesParManche = Map<String, dynamic>.from((roomData['votesParManche'] ?? {}) as Map? ?? {});
+                final votesPredictifs = Map<String, dynamic>.from((roomData['votesPredictifs'] ?? {}) as Map? ?? {});
+                final defisResultats = Map<String, dynamic>.from((roomData['defisResultats'] ?? {}) as Map? ?? {});
                 final coupablesParManche = (roomData['coupablesParManche'] ?? []) as List<dynamic>;
                 final totalManches = roomData['totalManches'] as int? ?? 3;
                 final myUid = FirebaseAuth.instance.currentUser?.uid;
 
                 final nomsParUid = <String, String>{};
                 for (var j in joueurs) {
-                  final d = j.data() as Map<String, dynamic>;
+                  final d = Map<String, dynamic>.from(j.data() as Map? ?? {});
                   nomsParUid[j.id] = d['name'] as String? ?? 'Joueur';
                 }
 
@@ -136,14 +131,14 @@ class _FinaleScreenState extends State<FinaleScreen> {
                   int ptVotes = 0, ptPredictif = 0, ptDefis = 0;
                   for (int i = 0; i < coupablesParManche.length; i++) {
                     final mk = 'manche_${i + 1}';
-                    final vm = (votesParManche[mk] ?? {}) as Map<String, dynamic>;
+                    final vm = Map<String, dynamic>.from((votesParManche[mk] ?? {}) as Map? ?? {});
                     if (vm[j.id] == coupablesParManche[i]) ptVotes += 3;
-                    final pm = (votesPredictifs[mk] ?? {}) as Map<String, dynamic>;
+                    final pm = Map<String, dynamic>.from((votesPredictifs[mk] ?? {}) as Map? ?? {});
                     if (pm[j.id] == coupablesParManche[i]) ptPredictif += 2;
                   }
                   for (int i = 1; i <= totalManches; i++) {
                     final mk = 'manche_$i';
-                    final dm = (defisResultats[mk] ?? {}) as Map<String, dynamic>;
+                    final dm = Map<String, dynamic>.from((defisResultats[mk] ?? {}) as Map? ?? {});
                     if (dm.containsKey(j.id)) {
                       ptDefis += (dm[j.id]['points'] as int? ?? 0);
                     }

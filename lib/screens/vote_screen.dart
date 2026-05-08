@@ -106,11 +106,11 @@ class _VoteScreenState extends State<VoteScreen> {
                 .doc(widget.code)
                 .snapshots(),
             builder: (context, roomSnap) {
-              final roomData = roomSnap.data?.data() as Map<String, dynamic>?;
-              final manche = roomData?['manche'] ?? 1;
-              final totalManches = roomData?['totalManches'] ?? 3;
-              final votesParManche = (roomData?['votesParManche'] ?? {}) as Map<String, dynamic>;
-              final votesM = (votesParManche['manche_$manche'] ?? {}) as Map<String, dynamic>;
+              final roomData = Map<String, dynamic>.from(roomSnap.data?.data() as Map? ?? {});
+              final manche = roomData['manche'] ?? 1;
+              final totalManches = roomData['totalManches'] ?? 3;
+              final votesParManche = Map<String, dynamic>.from((roomData['votesParManche'] ?? {}) as Map? ?? {});
+              final votesM = Map<String, dynamic>.from((votesParManche['manche_$manche'] ?? {}) as Map? ?? {});
               final votesCount = votesM.length;
 
               // Quand tous ont vote, redirection vers Classement ou Finale

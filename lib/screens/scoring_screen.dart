@@ -484,8 +484,8 @@ class _ScoringScreenState extends State<ScoringScreen>
               child: StreamBuilder<DocumentSnapshot>(
                 stream: FirebaseFirestore.instance.collection('rooms').doc(widget.code).snapshots(),
                 builder: (context, snap) {
-                  final data = snap.data?.data() as Map<String, dynamic>?;
-                  final isHost = data?['hostUid'] == _myUid;
+                  final data = Map<String, dynamic>.from(snap.data?.data() as Map? ?? {});
+                  final isHost = data['hostUid'] == _myUid;
 
                   if (!isHost) {
                     return Container(

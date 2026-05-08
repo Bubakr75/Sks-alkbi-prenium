@@ -85,10 +85,10 @@ class _VotePredictifScreenState extends State<VotePredictifScreen>
               stream: FirebaseFirestore.instance.collection('rooms').doc(widget.code).snapshots(),
               builder: (context, roomSnap) {
                 if (!roomSnap.hasData) return const Center(child: CircularProgressIndicator());
-                final roomData = roomSnap.data!.data() as Map<String, dynamic>?;
-                final manche = roomData?['manche'] as int? ?? 1;
-                final votesPredictifs = (roomData?['votesPredictifs'] ?? {}) as Map<String, dynamic>;
-                final votesM = (votesPredictifs['manche_$manche'] ?? {}) as Map<String, dynamic>;
+                final roomData = Map<String, dynamic>.from(roomSnap.data!.data() as Map? ?? {});
+                final manche = roomData['manche'] as int? ?? 1;
+                final votesPredictifs = Map<String, dynamic>.from((roomData['votesPredictifs'] ?? {}) as Map? ?? {});
+                final votesM = Map<String, dynamic>.from((votesPredictifs['manche_$manche'] ?? {}) as Map? ?? {});
                 final votesCount = votesM.length;
 
                 final Map<String, int> compteurVotes = {};

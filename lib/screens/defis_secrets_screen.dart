@@ -76,12 +76,12 @@ class _DefisSecretsScreenState extends State<DefisSecretsScreen> {
     final mancheKey = 'manche_$manche';
 
     // Vérifier si un défi est déjà attribué
-    final defisAttribues = (roomData['defisAttribues'] ?? {}) as Map<String, dynamic>;
-    final defisM = (defisAttribues[mancheKey] ?? {}) as Map<String, dynamic>;
+    final defisAttribues = Map<String, dynamic>.from((roomData['defisAttribues'] ?? {}) as Map? ?? {});
+    final defisM = Map<String, dynamic>.from((defisAttribues[mancheKey] ?? {}) as Map? ?? {});
 
     if (defisM.containsKey(_myUid)) {
       setState(() {
-        _monDefi = defisM[_myUid] as Map<String, dynamic>;
+        _monDefi = Map<String, dynamic>.from(defisM[_myUid] as Map? ?? {});
         _isLoading = false;
       });
       return;
@@ -89,7 +89,7 @@ class _DefisSecretsScreenState extends State<DefisSecretsScreen> {
 
     // Attribuer un défi aléatoire non encore utilisé
     final defisUtilises = defisM.values
-        .map((d) => (d as Map<String, dynamic>)['id'] as String)
+        .map((d) => (Map<String, dynamic>.from(d as Map? ?? {}))['id'] as String)
         .toList();
 
     final defisDisponibles = _tousLesDefis

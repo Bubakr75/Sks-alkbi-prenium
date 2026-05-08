@@ -86,12 +86,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
             if (!roomSnap.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            final roomData = roomSnap.data!.data() as Map<String, dynamic>?;
-            if (roomData == null) {
-              return const Center(
-                child: Text('Salon introuvable', style: TextStyle(color: Colors.white)),
-              );
-            }
+            final roomData = Map<String, dynamic>.from(roomSnap.data!.data() as Map? ?? {});
 
             final mancheActuelle = roomData['manche'] as int? ?? widget.mancheTerminee;
             final status = roomData['status'] as String? ?? 'classement';
@@ -143,7 +138,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
                 }
 
                 final joueurs = joueursSnap.data!.docs;
-                final votesParManche = (roomData['votesParManche'] ?? {}) as Map<String, dynamic>;
+                final votesParManche = Map<String, dynamic>.from((roomData['votesParManche'] ?? {}) as Map? ?? {});
                 final coupablesParManche = (roomData['coupablesParManche'] ?? []) as List<dynamic>;
 
                 final scores = <String, int>{};
@@ -153,7 +148,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
 
                 for (int i = 0; i < coupablesParManche.length; i++) {
                   final mancheKey = 'manche_${i + 1}';
-                  final votesM = (votesParManche[mancheKey] ?? {}) as Map<String, dynamic>;
+                  final votesM = Map<String, dynamic>.from((votesParManche[mancheKey] ?? {}) as Map? ?? {});
                   final coupableUid = coupablesParManche[i];
                   votesM.forEach((voterUid, votedUid) {
                     if (votedUid == coupableUid) {
@@ -251,7 +246,7 @@ class _ClassementMancheScreenState extends State<ClassementMancheScreen> {
                       ...classement.asMap().entries.map((entry) {
                         final pos = entry.key;
                         final j = entry.value;
-                        final jData = j.data() as Map<String, dynamic>;
+                        final jData = Map<String, dynamic>.from(j.data() as Map? ?? {});
                         final nom = jData['name'] as String? ?? 'Joueur';
                         final score = scores[j.id] ?? 0;
                         final isMe = j.id == _myUid;
