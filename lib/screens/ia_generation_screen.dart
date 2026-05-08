@@ -139,7 +139,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     cartes.forEach((nomJoueur, carteData) {
       final uid = nomVersUid[nomJoueur];
       if (uid == null) return;
-      final carte = carteData as Map<String, dynamic>;
+      final carte = Map<String, dynamic>.from(carteData as Map);
       batch.update(roomRef.collection('players').doc(uid), {
         'carte': {
           'role': carte['role'],
@@ -246,7 +246,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
       roles.forEach((nomJoueur, carteData) {
         final uid = nomVersUid[nomJoueur];
         if (uid == null) return;
-        final carte = carteData as Map<String, dynamic>;
+        final carte = Map<String, dynamic>.from(carteData as Map);
         batch.update(
           roomRef.collection('players').doc(uid),
           {
@@ -351,6 +351,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
 
 
 
