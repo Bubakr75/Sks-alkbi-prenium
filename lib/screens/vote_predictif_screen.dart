@@ -490,3 +490,5 @@ class _VotePredictifScreenState extends State<VotePredictifScreen>
     );
   }
 }
+
+

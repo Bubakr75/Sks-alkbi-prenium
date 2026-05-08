@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import '../services/sound_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -201,7 +202,7 @@ class _FinaleScreenState extends State<FinaleScreen> {
                       // BOUTON RÉVÉLER
                       if (!_revealed)
                         ElevatedButton(
-                          onPressed: () => setState(() => _revealed = true),
+                          onPressed: () { SoundService().onFinale(); setState(() => _revealed = true); },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.redAccent,
                             padding: const EdgeInsets.symmetric(
@@ -463,3 +464,5 @@ class _FinaleScreenState extends State<FinaleScreen> {
     );
   }
 }
+
+

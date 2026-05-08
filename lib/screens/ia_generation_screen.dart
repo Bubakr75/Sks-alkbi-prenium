@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../services/sound_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'vote_predictif_screen.dart';
@@ -37,6 +38,7 @@ class _IaGenerationScreenState extends State<IaGenerationScreen> {
   void initState() {
     super.initState();
     _generer();
+    SoundService().onSuspense();
   }
 
   String _buildPrompt(String theme) {
@@ -246,6 +248,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
                         _statut = 'Nouvelle tentative...';
                       });
                       _generer();
+    SoundService().onSuspense();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -264,6 +267,7 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
 
 
 
