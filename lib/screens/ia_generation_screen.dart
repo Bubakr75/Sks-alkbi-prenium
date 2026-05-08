@@ -94,6 +94,92 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
 ''';
   }
 
+
+  // ── MODE DÉMO : histoire fictive sans API ──────────────────
+  Future<void> _genererFictif(String theme) async {
+    setState(() => _statut = 'Génération histoire fictive...');
+
+    final joueurs = widget.noms.entries.toList();
+    joueurs.shuffle();
+
+    final roles = ['coupable', 'enquêteur', 'malchanceux'];
+    while (roles.length < joueurs.length) { roles.add('innocent'); }
+
+    final Map<String, dynamic> cartes = {};
+    for (int i = 0; i < joueurs.length; i++) {
+      final nom = joueurs[i].value;
+      final role = roles[i];
+      cartes[nom] = {
+        'role': role,
+        'qui_tu_es': _roleDesc(role, nom, theme),
+        'defend': 'Tu affirmes ne rien avoir à te reprocher dans cette affaire.',
+        'cache': role == 'coupable'
+            ? 'Tu es l\'auteur du crime. Noie le poisson à tout prix.'
+            : 'Tu caches une petite entorse aux règles, mais rien de grave.',
+        'accuse': joueurs[(i + 1) % joueurs.length].value,
+        'defi': 'Convaincs un joueur de voter pour quelqu\'un d\'autre.',
+        'indice': role == 'enquêteur'
+            ? 'Tu as trouvé une empreinte suspecte près de la scène du crime.'
+            : null,
+      };
+    }
+
+    final histoire =
+        'Dans un petit village isolé, une affaire de $theme secoue la communauté. '
+        'Chacun a un alibi, mais les apparences sont trompeuses. '
+        'À vous de démêler le vrai du faux avant que le coupable ne disparaisse.';
+
+    final roomRef = FirebaseFirestore.instance.collection('rooms').doc(widget.code);
+    await roomRef.update({'iaHistoire': histoire, 'iaTheme': theme, 'manche': widget.manche});
+
+    final Map<String, String> nomVersUid = {};
+    widget.noms.forEach((uid, nom) => nomVersUid[nom] = uid);
+
+    final batch = FirebaseFirestore.instance.batch();
+    cartes.forEach((nomJoueur, carteData) {
+      final uid = nomVersUid[nomJoueur];
+      if (uid == null) return;
+      final carte = carteData as Map<String, dynamic>;
+      batch.update(roomRef.collection('players').doc(uid), {
+        'carte': {
+          'role': carte['role'],
+          'roleDansHistoire': carte['qui_tu_es'],
+          'secretConnu': carte['defend'],
+          'secretInavouable': carte['cache'],
+          'accuse': carte['accuse'],
+          'defi': carte['defi'],
+          'indice': carte['indice'],
+        },
+        'roleKey': carte['role'],
+      });
+    });
+    await batch.commit();
+
+    await roomRef.update({'status': 'playing', 'gameStartedAt': FieldValue.serverTimestamp()});
+    setState(() => _statut = 'Histoire prête ! Lancement...');
+
+    if (mounted && !_navigated) {
+      _navigated = true;
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VotePredictifScreen(code: widget.code, playerName: widget.playerName),
+          ),
+        );
+      }
+    }
+  }
+
+  String _roleDesc(String role, String nom, String theme) {
+    switch (role) {
+      case 'coupable': return '$nom est au cœur de l\'affaire de $theme. Tout l\'accuse.';
+      case 'enquêteur': return '$nom mène l\'enquête avec méthode et discrétion.';
+      case 'malchanceux': return '$nom s\'est retrouvé au mauvais endroit au mauvais moment.';
+      default: return '$nom est un témoin innocent pris dans la tourmente.';
+    }
+  }
   Future<void> _generer() async {
     try {
       setState(() => _statut = 'Connexion à l\'IA...');
@@ -200,10 +286,8 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
         }
       }
     } catch (e) {
-      setState(() {
-        _statut = 'Erreur : $e';
-        _erreur = true;
-      });
+      final themeFictif = ['Trahison', 'Vol', 'Tromperie'][DateTime.now().millisecond % 3];
+      await _genererFictif(themeFictif);
     }
   }
 
@@ -267,6 +351,9 @@ RÉPONDS UNIQUEMENT EN JSON STRICT (aucun texte avant ou après) :
     );
   }
 }
+
+
+
 
 
 

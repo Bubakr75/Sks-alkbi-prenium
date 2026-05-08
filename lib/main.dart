@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'firebase_options.dart';
 import 'screens/choix_scenario_screen.dart';
 import 'screens/test_mode_screen.dart';
@@ -31,14 +32,44 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final AudioPlayer _bgPlayer = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _playBgMusic();
+  }
+
+  Future<void> _playBgMusic() async {
+    await _bgPlayer.setReleaseMode(ReleaseMode.loop);
+    await _bgPlayer.setVolume(0.35);
+    await _bgPlayer.play(AssetSource('sounds/suspense.mp3'));
+  }
+
+  @override
+  void dispose() {
+    _bgPlayer.stop();
+    _bgPlayer.dispose();
+    super.dispose();
+  }
 
   PageRoute _route(Widget page) => PageRouteBuilder(
     pageBuilder: (ctx, a1, a2) => page,
     transitionsBuilder: (ctx, anim, a2, child) => FadeTransition(opacity: anim, child: child),
     transitionDuration: const Duration(milliseconds: 300),
   );
+
+  void _navigateTo(Widget page) {
+    _bgPlayer.stop();
+    Navigator.push(context, _route(page));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +123,7 @@ class HomeScreen extends StatelessWidget {
                     emoji: '🏠',
                     gradient: const LinearGradient(colors: [Color(0xFF6C63FF), Color(0xFF3A3580)]),
                     glowColor: const Color(0xFF6C63FF),
-                    onTap: () => Navigator.push(context, _route(const ChoixScenarioScreen())),
+                    onTap: () => _navigateTo(const ChoixScenarioScreen()),
                   )
                   .animate()
                   .slideY(begin: 0.4, duration: 500.ms, delay: 500.ms, curve: Curves.easeOut)
@@ -101,14 +132,14 @@ class HomeScreen extends StatelessWidget {
                   _GlassButton(
                     label: 'Rejoindre un salon',
                     emoji: '🔑',
-                    onTap: () => Navigator.push(context, _route(const JoinRoomScreen())),
+                    onTap: () => _navigateTo(const JoinRoomScreen()),
                   )
                   .animate()
                   .slideY(begin: 0.4, duration: 500.ms, delay: 600.ms, curve: Curves.easeOut)
                   .fadeIn(duration: 400.ms, delay: 600.ms),
                   const SizedBox(height: 14),
                   GestureDetector(
-                    onTap: () => Navigator.push(context, _route(const TestModeSetupScreen())),
+                    onTap: () => _navigateTo(const TestModeSetupScreen()),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 14),
